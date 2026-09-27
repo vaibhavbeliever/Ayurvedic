@@ -96,7 +96,7 @@ export default function Header({
             </div>
 
             {/* Mobile View Switcher */}
-            <div className="md:hidden flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            {/* <div className="md:hidden flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 type="button"
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
@@ -115,7 +115,7 @@ export default function Header({
               >
                 Admin
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Center: Segmented Navigation Switcher (Desktop) */}

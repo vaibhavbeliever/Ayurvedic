@@ -10,8 +10,8 @@ import AdminPanel from './components/admin/AdminPanel'
 const STORAGE_KEY = 'ayur_consultation_form_draft_v2'
 
 export default function App() {
-  // const [currentView, setCurrentView] = useState('form') // 'form' | 'admin'
-  const [currentView, setCurrentView] = useState('admin') // 'form' | 'admin'
+  const [currentView, setCurrentView] = useState('form') // 'form' | 'admin'
+  // const [currentView, setCurrentView] = useState('admin') // 'form' | 'admin'
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState(() => {
     try {
