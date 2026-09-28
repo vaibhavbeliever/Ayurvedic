@@ -3,6 +3,7 @@ import { useState } from 'react'
 export default function Header({
   currentView = 'form',
   onNavigate,
+  onViewChange,
   adminUser,
   onLogout,
   currentStep = 1,
@@ -14,6 +15,11 @@ export default function Header({
 
   const isFormView = currentView === 'form'
   const isAdminView = currentView === 'admin'
+
+  const handleSelectView = (view) => {
+    if (onViewChange) onViewChange(view)
+    if (onNavigate) onNavigate(view === 'admin' ? '/admin' : '/')
+  }
 
   return (
     <>
@@ -72,7 +78,8 @@ export default function Header({
               {/* Logo Emblem */}
               <div
                 className="flex items-center gap-3 cursor-pointer group"
-                onClick={() => onNavigate('/')}
+                onClick={() => handleSelectView('form')}
+                title="Go to User Assessment Form"
               >
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-sky-500 text-white flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0 group-hover:scale-105 transition-transform duration-200">
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -96,30 +103,35 @@ export default function Header({
             </div>
 
             {/* Mobile View Switcher */}
-            {/* <div className="md:hidden flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="md:hidden flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/90 shadow-2xs">
               <button
                 type="button"
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                  isFormView ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500'
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isFormView
+                    ? 'bg-white text-blue-700 shadow-xs border border-slate-200/50'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
-                onClick={() => onNavigate('/')}
+                onClick={() => handleSelectView('form')}
               >
-                Patient
+                <span>User Panel</span>
               </button>
               <button
                 type="button"
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                  isAdminView ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500'
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isAdminView
+                    ? 'bg-white text-blue-700 shadow-xs border border-slate-200/50'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
-                onClick={() => onNavigate('/admin')}
+                onClick={() => handleSelectView('admin')}
               >
-                Admin
+                <span>Admin</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isAdminView ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
               </button>
-            </div> */}
+            </div>
           </div>
 
           {/* Center: Segmented Navigation Switcher (Desktop) */}
-          <div className="hidden md:flex items-center bg-slate-100/90 p-1 rounded-2xl border border-slate-200/90 shadow-2xs">
+          {/* <div className="hidden md:flex items-center bg-slate-100/90 p-1 rounded-2xl border border-slate-200/90 shadow-2xs">
             <button
               type="button"
               className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
@@ -127,7 +139,7 @@ export default function Header({
                   ? 'bg-white text-blue-700 shadow-sm border border-slate-200/60'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
               }`}
-              onClick={() => onNavigate('/')}
+              onClick={() => handleSelectView('form')}
             >
               <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -136,7 +148,7 @@ export default function Header({
                 <line x1="16" y1="17" x2="8" y2="17" />
                 <polyline points="10 9 9 9 8 9" />
               </svg>
-              <span>Patient Intake Form</span>
+              <span>User Panel (Patient Form)</span>
             </button>
 
             <button
@@ -146,17 +158,15 @@ export default function Header({
                   ? 'bg-white text-blue-700 shadow-sm border border-slate-200/60'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
               }`}
-              onClick={() => onNavigate('/admin')}
+              onClick={() => handleSelectView('admin')}
             >
               <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              <span>Admin Portal</span>
-              {adminUser && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              )}
+              <span>Admin Panel</span>
+              <span className={`w-2 h-2 rounded-full ${isAdminView ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
             </button>
-          </div>
+          </div> */}
 
           {/* Right Action Section */}
           <div className="w-full md:w-auto flex items-center justify-between md:justify-end gap-3 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">

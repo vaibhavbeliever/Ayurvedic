@@ -8,10 +8,31 @@ import SubmissionSuccess from './components/patient/SubmissionSuccess'
 import AdminPanel from './components/admin/AdminPanel'
 
 const STORAGE_KEY = 'ayur_consultation_form_draft_v2'
+const VIEW_STORAGE_KEY = 'ayur_active_view'
+
+function getInitialView() {
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.toLowerCase()
+    const path = window.location.pathname.toLowerCase()
+    const search = new URLSearchParams(window.location.search)
+    if (hash === '#admin' || path.startsWith('/admin') || search.get('view') === 'admin' || search.get('panel') === 'admin') {
+      return 'admin'
+    }
+    if (hash === '#form' || hash === '#user' || search.get('view') === 'form' || search.get('panel') === 'user') {
+      return 'form'
+    }
+    try {
+      const saved = localStorage.getItem(VIEW_STORAGE_KEY)
+      if (saved === 'admin' || saved === 'form') return saved
+    } catch {
+      // ignore
+    }
+  }
+  return 'form'
+}
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('form') // 'form' | 'admin'
-  // const [currentView, setCurrentView] = useState('admin') // 'form' | 'admin'
+  const [currentView, setCurrentView] = useState(getInitialView)
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState(() => {
     try {
@@ -39,6 +60,41 @@ export default function App() {
   const [referenceId, setReferenceId] = useState('')
   const [serverStatus, setServerStatus] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Switch view handler with URL hash and storage sync
+  const handleViewChange = (view) => {
+    const nextView = view === 'admin' ? 'admin' : 'form'
+    setCurrentView(nextView)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, nextView)
+      if (nextView === 'admin') {
+        window.location.hash = 'admin'
+      } else {
+        window.location.hash = 'user'
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Synchronize view on browser back/forward or direct hash navigation
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const hash = window.location.hash.toLowerCase()
+      if (hash === '#admin') {
+        setCurrentView('admin')
+      } else if (hash === '#form' || hash === '#user' || hash === '') {
+        setCurrentView('form')
+      }
+    }
+
+    window.addEventListener('hashchange', handleLocationChange)
+    window.addEventListener('popstate', handleLocationChange)
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange)
+      window.removeEventListener('popstate', handleLocationChange)
+    }
+  }, [])
 
   // Auto-save form draft to localStorage
   useEffect(() => {
@@ -228,7 +284,8 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-sky-50/20 to-blue-50/25 text-slate-800">
       <Header
         currentView={currentView}
-        onViewChange={(view) => setCurrentView(view)}
+        onViewChange={handleViewChange}
+        onNavigate={(route) => handleViewChange(route === '/admin' ? 'admin' : 'form')}
         currentStep={isSubmitted ? 6 : currentStep}
         totalSteps={6}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
@@ -238,7 +295,7 @@ export default function App() {
       <div className="max-w-7xl mx-auto w-full flex-1 flex">
         {currentView === 'admin' ? (
           <main className="w-full p-4 sm:p-8 lg:p-10 flex flex-col items-center">
-            <AdminPanel onBackToForm={() => setCurrentView('form')} />
+            <AdminPanel onBackToForm={() => handleViewChange('form')} />
           </main>
         ) : (
           <>
@@ -268,7 +325,7 @@ export default function App() {
                   <button
                     type="button"
                     className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                    onClick={() => setCurrentView('admin')}
+                    onClick={() => handleViewChange('admin')}
                   >
                     Open Admin Portal to view this record in database →
                   </button>
@@ -303,6 +360,33 @@ export default function App() {
           </>
         )}
       </div>
+
+      {/* Floating Fast Switcher Pill */}
+      <aside aria-label="Panel Navigation" className="fixed bottom-5 right-5 z-50">
+        <button
+          type="button"
+          onClick={() => handleViewChange(currentView === 'admin' ? 'form' : 'admin')}
+          className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 hover:bg-slate-900 text-white rounded-full text-xs font-bold shadow-2xl shadow-slate-900/30 backdrop-blur-md border border-slate-700/60 transition-all hover:scale-105 active:scale-95 cursor-pointer ring-2 ring-white/20"
+          title={currentView === 'admin' ? 'Switch to User Intake Form' : 'Switch to Admin Management Portal'}
+        >
+          {currentView === 'admin' ? (
+            <>
+              <svg className="w-4 h-4 text-sky-400 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>User Panel (Form)</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4 text-emerald-400 group-hover:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span>Admin Panel</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </>
+          )}
+        </button>
+      </aside>
     </div>
   )
 }
