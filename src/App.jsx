@@ -362,7 +362,7 @@ export default function App() {
       </div>
 
       {/* Floating Fast Switcher Pill */}
-      <aside aria-label="Panel Navigation" className="fixed bottom-5 right-5 z-50">
+      {/* <aside aria-label="Panel Navigation" className="fixed bottom-5 right-5 z-50">
         <button
           type="button"
           onClick={() => handleViewChange(currentView === 'admin' ? 'form' : 'admin')}
@@ -386,7 +386,7 @@ export default function App() {
             </>
           )}
         </button>
-      </aside>
+      </aside> */}
     </div>
   )
 }
