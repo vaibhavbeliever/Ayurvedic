@@ -201,83 +201,201 @@ export default function App() {
   }
 
   // Submit to Backend
+  // const handleSubmitToBackend = async () => {
+  //   // Validate consent statements in step 6
+  //   const consentStatements = formData.consentStatements || []
+  //   const consentOptions = CONSENT_SECTION.fields.find((f) => f.id === 'consentStatements')?.options || []
+  //   const newErrors = {}
+
+  //   if (consentStatements.length < consentOptions.length) {
+  //     newErrors.consentStatements = 'You must agree to all declaration statements.'
+  //   }
+  //   if (!formData.consentFullName) {
+  //     newErrors.consentFullName = 'Please provide your full legal name as digital signature.'
+  //   }
+  //   if (!formData.consentDate) {
+  //     newErrors.consentDate = 'Date is required.'
+  //   }
+
+  //   if (Object.keys(newErrors).length > 0) {
+  //     setErrors(newErrors)
+  //     setSubmitError('Please complete the Consent & Declaration section before sending.')
+  //     window.scrollTo({ top: 300, behavior: 'smooth' })
+  //     return
+  //   }
+
+  //   setIsSubmitting(true)
+  //   setSubmitError(null)
+
+  //   const refCode = 'AYUR-' + new Date().getFullYear() + '-' + Math.floor(100000 + Math.random() * 900000)
+
+  //   const payload = {
+  //     referenceId: refCode,
+  //     submittedAt: new Date().toISOString(),
+  //     patient: {
+  //       fullName: formData.fullName || '',
+  //       email: formData.email || '',
+  //       phone: formData.phone || '',
+  //       dob: formData.dob || '',
+  //     },
+  //     responses: formData,
+  //   }
+
+  //   console.log('Sending payload to backend:', payload)
+
+  //   try {
+  //     const response = await fetch('/api/consultation', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(payload),
+  //     })
+
+  //     if (response.ok) {
+  //       const data = await response.json().catch(() => ({}))
+  //       setServerStatus(data.message || 'Saved to database (HTTP 200)')
+  //     } else {
+  //       console.warn('Backend returned non-200, archiving locally:', response.status)
+  //       setServerStatus(`Acknowledged & stored locally (Server code: ${response.status})`)
+  //     }
+  //   } catch (err) {
+  //     console.warn('Backend offline or simulated, cached locally:', err)
+  //     setServerStatus('Stored locally in browser records (Backend server offline)')
+  //   } finally {
+  //     try {
+  //       const existing = JSON.parse(localStorage.getItem('ayur_submitted_records') || '[]')
+  //       existing.unshift(payload)
+  //       localStorage.setItem('ayur_submitted_records', JSON.stringify(existing.slice(0, 20)))
+  //     } catch {
+  //       // ignore
+  //     }
+
+  //     setReferenceId(refCode)
+  //     setIsSubmitting(false)
+  //     setIsSubmitted(true)
+  //     localStorage.removeItem(STORAGE_KEY)
+  //   }
+  // }
+
   const handleSubmitToBackend = async () => {
     // Validate consent statements in step 6
-    const consentStatements = formData.consentStatements || []
-    const consentOptions = CONSENT_SECTION.fields.find((f) => f.id === 'consentStatements')?.options || []
-    const newErrors = {}
+    const consentStatements = formData.consentStatements || [];
+    const consentOptions =
+      CONSENT_SECTION.fields.find((f) => f.id === "consentStatements")
+        ?.options || [];
+    const newErrors = {};
 
     if (consentStatements.length < consentOptions.length) {
-      newErrors.consentStatements = 'You must agree to all declaration statements.'
+      newErrors.consentStatements =
+        "You must agree to all declaration statements.";
     }
     if (!formData.consentFullName) {
-      newErrors.consentFullName = 'Please provide your full legal name as digital signature.'
+      newErrors.consentFullName =
+        "Please provide your full legal name as digital signature.";
     }
     if (!formData.consentDate) {
-      newErrors.consentDate = 'Date is required.'
+      newErrors.consentDate = "Date is required.";
     }
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      setSubmitError('Please complete the Consent & Declaration section before sending.')
-      window.scrollTo({ top: 300, behavior: 'smooth' })
-      return
+      setErrors(newErrors);
+      setSubmitError(
+        "Please complete the Consent & Declaration section before sending.",
+      );
+      window.scrollTo({ top: 300, behavior: "smooth" });
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    const refCode = 'AYUR-' + new Date().getFullYear() + '-' + Math.floor(100000 + Math.random() * 900000)
+    const refCode =
+      "AYUR-" +
+      new Date().getFullYear() +
+      "-" +
+      Math.floor(100000 + Math.random() * 900000);
 
     const payload = {
       referenceId: refCode,
       submittedAt: new Date().toISOString(),
       patient: {
-        fullName: formData.fullName || '',
-        email: formData.email || '',
-        phone: formData.phone || '',
-        dob: formData.dob || '',
+        fullName: formData.fullName || "",
+        email: formData.email || "",
+        phone: formData.phone || "",
+        dob: formData.dob || "",
       },
       responses: formData,
-    }
+    };
 
-    console.log('Sending payload to backend:', payload)
+    console.log("Sending payload to backend:", payload);
 
     try {
-      const response = await fetch('/api/consultation', {
-        method: 'POST',
+      // ✅ Get backend URL
+      const getBackendURL = () => {
+        const isProduction =
+          window.location.hostname === "vaidya-shivansh.vercel.app" ||
+          window.location.hostname.includes("vercel.app");
+
+        if (isProduction) {
+          return "https://ayurvedic-backend-hkci.onrender.com";
+        }
+        return window.location.origin;
+      };
+
+      const BACKEND_URL = getBackendURL();
+      const apiUrl = new URL("/api/consultation", BACKEND_URL).toString();
+
+      console.log("📤 Posting to:", apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      })
+      });
 
       if (response.ok) {
-        const data = await response.json().catch(() => ({}))
-        setServerStatus(data.message || 'Saved to database (HTTP 200)')
+        const data = await response.json().catch(() => ({}));
+        console.log("✅ Backend success:", data.message);
+        setServerStatus(data.message || "Saved to database (HTTP 200)");
       } else {
-        console.warn('Backend returned non-200, archiving locally:', response.status)
-        setServerStatus(`Acknowledged & stored locally (Server code: ${response.status})`)
+        console.warn(
+          "Backend returned non-200, archiving locally:",
+          response.status,
+        );
+        setServerStatus(
+          `Acknowledged & stored locally (Server code: ${response.status})`,
+        );
       }
     } catch (err) {
-      console.warn('Backend offline or simulated, cached locally:', err)
-      setServerStatus('Stored locally in browser records (Backend server offline)')
+      console.warn("Backend offline or simulated, cached locally:", err);
+      setServerStatus(
+        "Stored locally in browser records (Backend server offline)",
+      );
     } finally {
       try {
-        const existing = JSON.parse(localStorage.getItem('ayur_submitted_records') || '[]')
-        existing.unshift(payload)
-        localStorage.setItem('ayur_submitted_records', JSON.stringify(existing.slice(0, 20)))
+        const existing = JSON.parse(
+          localStorage.getItem("ayur_submitted_records") || "[]",
+        );
+        existing.unshift(payload);
+        localStorage.setItem(
+          "ayur_submitted_records",
+          JSON.stringify(existing.slice(0, 20)),
+        );
       } catch {
         // ignore
       }
 
-      setReferenceId(refCode)
-      setIsSubmitting(false)
-      setIsSubmitted(true)
-      localStorage.removeItem(STORAGE_KEY)
+      setReferenceId(refCode);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      localStorage.removeItem(STORAGE_KEY);
     }
-  }
+  };
 
+  
   const activeStep = COMBINED_STEPS.find((s) => s.id === currentStep)
 
   return (

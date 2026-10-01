@@ -13,32 +13,20 @@ export default function AdminPanel({ onBackToForm }) {
 
   // ✅ Get backend URL
   const getBackendURL = () => {
-    console.log("🔍 Hostname:", window.location.hostname);
-    console.log("🔍 Pathname:", window.location.pathname);
-
     // ✅ Production check - Multiple conditions
     const isProduction =
       window.location.hostname === "vaidya-shivansh.vercel.app" ||
       window.location.hostname.includes("vercel.app") ||
       window.location.hostname.includes("vaidya-shivansh");
 
-    console.log("🔍 Is Production?:", isProduction);
-
     if (isProduction) {
-      console.log(
-        "✅ Using BACKEND: https://ayurvedic-backend-hkci.onrender.com",
-      );
       return "https://ayurvedic-backend-hkci.onrender.com";
     }
 
-    console.log("✅ Using LOCAL: " + window.location.origin);
     return window.location.origin;
   };
 
   const BACKEND_URL = getBackendURL();
-  console.log("📡 BACKEND_URL set to:", BACKEND_URL);
-
-  // const BACKEND_URL = getBackendURL();
 
   useEffect(() => {
     let isMounted = true;
