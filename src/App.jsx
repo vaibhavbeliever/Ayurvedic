@@ -328,8 +328,6 @@ export default function App() {
       responses: formData,
     };
 
-    console.log("Sending payload to backend:", payload);
-
     try {
       // ✅ Get backend URL
       const getBackendURL = () => {
@@ -346,7 +344,6 @@ export default function App() {
       const BACKEND_URL = getBackendURL();
       const apiUrl = new URL("/api/consultation", BACKEND_URL).toString();
 
-      console.log("📤 Posting to:", apiUrl);
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -358,7 +355,6 @@ export default function App() {
 
       if (response.ok) {
         const data = await response.json().catch(() => ({}));
-        console.log("✅ Backend success:", data.message);
         setServerStatus(data.message || "Saved to database (HTTP 200)");
       } else {
         console.warn(
@@ -395,7 +391,7 @@ export default function App() {
     }
   };
 
-  
+
   const activeStep = COMBINED_STEPS.find((s) => s.id === currentStep)
 
   return (
