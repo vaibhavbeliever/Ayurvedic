@@ -13,15 +13,32 @@ export default function AdminPanel({ onBackToForm }) {
 
   // ✅ Get backend URL
   const getBackendURL = () => {
-    // Production - use full backend URL
-    if (window.location.hostname.includes("vercel.app")) {
+    console.log("🔍 Hostname:", window.location.hostname);
+    console.log("🔍 Pathname:", window.location.pathname);
+
+    // ✅ Production check - Multiple conditions
+    const isProduction =
+      window.location.hostname === "vaidya-shivansh.vercel.app" ||
+      window.location.hostname.includes("vercel.app") ||
+      window.location.hostname.includes("vaidya-shivansh");
+
+    console.log("🔍 Is Production?:", isProduction);
+
+    if (isProduction) {
+      console.log(
+        "✅ Using BACKEND: https://ayurvedic-backend-hkci.onrender.com",
+      );
       return "https://ayurvedic-backend-hkci.onrender.com";
     }
-    // Development - use relative path (Vite proxy)
+
+    console.log("✅ Using LOCAL: " + window.location.origin);
     return window.location.origin;
   };
 
   const BACKEND_URL = getBackendURL();
+  console.log("📡 BACKEND_URL set to:", BACKEND_URL);
+
+  // const BACKEND_URL = getBackendURL();
 
   useEffect(() => {
     let isMounted = true;
@@ -30,6 +47,8 @@ export default function AdminPanel({ onBackToForm }) {
       try {
         // ✅ Use full backend URL
         const url = new URL("/api/consultations", BACKEND_URL);
+
+        console.log(url);
 
         if (searchQuery) url.searchParams.set("search", searchQuery);
         if (statusFilter !== "All")
