@@ -17,13 +17,16 @@ export default function AdminPanel({ onBackToForm }) {
     async function loadData() {
       try {
         const url = new URL('/api/consultations', window.location.origin)
+
+
         if (searchQuery) url.searchParams.set('search', searchQuery)
         if (statusFilter !== 'All') url.searchParams.set('status', statusFilter)
-
         const res = await fetch(url.toString())
+
         if (!res.ok) throw new Error(`HTTP error ${res.status}`)
 
         const data = await res.json()
+        console.log("data is here : ", data);
         if (isMounted) {
           setConsultations(data.records || [])
           setDataSource(data.source === 'mongodb' ? 'MongoDB Database' : 'Local Archive Fallback')
