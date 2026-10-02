@@ -200,31 +200,31 @@ export default function AdminEditModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col my-auto overflow-hidden">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col my-auto overflow-hidden">
           
           {/* Modal Top Header */}
-          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 to-sky-500 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-700 to-sky-500 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <polyline points="16 11 18 13 22 9" />
                 </svg>
               </div>
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-lg font-extrabold text-slate-900">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900 truncate">
                     {patientData.fullName || 'Patient Assessment'}
                   </h3>
-                  <span className="font-mono text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-md font-bold">
+                  <span className="font-mono text-[11px] sm:text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-bold">
                     {consultation.referenceId}
                   </span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
                     {status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">
                   Submitted on {dateDisplay} • {answeredCount} responses recorded
                 </p>
               </div>
@@ -232,18 +232,19 @@ export default function AdminEditModal({
 
             <button
               type="button"
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer transition-colors"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer transition-colors text-lg font-bold shrink-0"
               onClick={onClose}
+              title="Close modal"
             >
               &times;
             </button>
           </div>
 
           {/* Modal Tabs Bar */}
-          <div className="flex border-b border-slate-200 px-6 bg-white gap-3">
+          <div className="flex border-b border-slate-200 px-3 sm:px-6 bg-white gap-1 sm:gap-3 overflow-x-auto shrink-0 scrollbar-none">
             <button
               type="button"
-              className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`py-2.5 sm:py-3 px-2 sm:px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 activeTab === 'responses'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -251,26 +252,26 @@ export default function AdminEditModal({
               onClick={() => setActiveTab('responses')}
             >
               <span>Assessment Responses</span>
-              <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.2 rounded-full font-extrabold">
+              <span className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
                 {answeredCount}
               </span>
             </button>
 
             <button
               type="button"
-              className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              className={`py-2.5 sm:py-3 px-2 sm:px-3 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'patient'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
               onClick={() => setActiveTab('patient')}
             >
-              Patient Demographics & Vitals
+              Demographics & Vitals
             </button>
 
             <button
               type="button"
-              className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              className={`py-2.5 sm:py-3 px-2 sm:px-3 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'notes'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -282,13 +283,13 @@ export default function AdminEditModal({
           </div>
 
           {/* Modal Scrollable Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/40">
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 bg-slate-50/40">
             
             {/* TAB 1: RESPONSES (STRUCTURED CLINICAL VIEW / EDIT) */}
             {activeTab === 'responses' && (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* Controls bar */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
+                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
                       Patient Consultation Intake Responses
@@ -298,7 +299,7 @@ export default function AdminEditModal({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -322,13 +323,13 @@ export default function AdminEditModal({
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
-                      <span>{isEditMode ? 'Done Editing' : 'Edit Responses'}</span>
+                      <span>{isEditMode ? 'Done' : 'Edit'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Sections list */}
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {allSections.map((sec, sIdx) => {
                     const visibleFields = sec.fields.filter((field) => {
                       if (!filterFilledOnly) return true
@@ -343,9 +344,9 @@ export default function AdminEditModal({
                     return (
                       <div
                         key={sIdx}
-                        className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4"
+                        className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5"
                       >
-                        <div className="border-b border-slate-100 pb-3">
+                        <div className="border-b border-slate-100 pb-2.5">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
                               Step {sec.stepId}
@@ -357,14 +358,14 @@ export default function AdminEditModal({
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {visibleFields.map((field) => {
                             const val = responses[field.id]
 
                             return (
                               <div
                                 key={field.id}
-                                className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-3.5 space-y-1.5"
+                                className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-3 sm:p-3.5 space-y-1.5"
                               >
                                 <div className="text-xs font-bold text-slate-700 leading-snug">
                                   {field.label}
@@ -404,7 +405,7 @@ export default function AdminEditModal({
 
                   {/* Additional / Unmapped fields fallback (if any exist from earlier submissions) */}
                   {unmappedEntries.length > 0 && (
-                    <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+                    <div className="bg-white border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
                       <div className="border-b border-amber-100 pb-2.5">
                         <h5 className="font-extrabold text-sm text-amber-900">
                           Additional Submitted Responses ({unmappedEntries.length})
@@ -432,7 +433,7 @@ export default function AdminEditModal({
 
             {/* TAB 2: PATIENT DEMOGRAPHICS & VITALS */}
             {activeTab === 'patient' && (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div className="bg-blue-50/50 border border-blue-200/60 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
                     <div className="text-xs font-bold text-blue-900 uppercase tracking-wide">
@@ -444,7 +445,7 @@ export default function AdminEditModal({
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="px-3.5 py-2 bg-white border border-blue-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
+                    className="px-3.5 py-2 bg-white border border-blue-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs w-full sm:w-auto"
                   >
                     <option value="Pending Review">Pending Review</option>
                     <option value="Under Review">Under Review</option>
@@ -453,12 +454,12 @@ export default function AdminEditModal({
                   </select>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
                   <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">
                     Contact & Identification
                   </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700">Full Name</label>
                       <input
@@ -516,6 +517,7 @@ export default function AdminEditModal({
                         className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={patientData.placeOfBirth}
                         onChange={(e) => handlePatientFieldChange('placeOfBirth', e.target.value)}
+                        placeholder="City, Country"
                       />
                     </div>
 
@@ -534,7 +536,7 @@ export default function AdminEditModal({
                       </select>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 sm:col-span-2">
                       <label className="text-xs font-bold text-slate-700">Occupation</label>
                       <input
                         type="text"
@@ -549,7 +551,7 @@ export default function AdminEditModal({
                     Physical Body Metrics
                   </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-slate-700">Height</label>
                       <input
@@ -589,8 +591,8 @@ export default function AdminEditModal({
 
             {/* TAB 3: NOTES & DOSHA */}
             {activeTab === 'notes' && (
-              <div className="space-y-5">
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="space-y-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-800">Primary Dosha Constitution Diagnosis</label>
                     <select
@@ -602,10 +604,10 @@ export default function AdminEditModal({
                       <option value="Vata Dominant">Vata Dominant (Air & Ether)</option>
                       <option value="Pitta Dominant">Pitta Dominant (Fire & Water)</option>
                       <option value="Kapha Dominant">Kapha Dominant (Earth & Water)</option>
-                      <option value="Vata-Pitta">Vata-Pitta</option>
-                      <option value="Pitta-Kapha">Pitta-Kapha</option>
-                      <option value="Vata-Kapha">Vata-Kapha</option>
-                      <option value="Tridoshic (Balanced)">Tridoshic (Balanced)</option>
+                      <option value="Vata-Pitta">Vata-Pitta Dual</option>
+                      <option value="Pitta-Kapha">Pitta-Kapha Dual</option>
+                      <option value="Vata-Kapha">Vata-Kapha Dual</option>
+                      <option value="Tridoshic (Balanced)">Tridoshic (Balanced Sama)</option>
                     </select>
                   </div>
 
@@ -637,7 +639,7 @@ export default function AdminEditModal({
           </div>
 
           {/* Modal Bottom Action Footer */}
-          <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-slate-50 border-t border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <button
               type="button"
               className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg cursor-pointer transition-colors"
@@ -661,11 +663,11 @@ export default function AdminEditModal({
 
               <button
                 type="button"
-                className="px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                className="px-5 sm:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50"
                 onClick={handleSave}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving Changes...' : 'Save & Update Record'}
+                {isSaving ? 'Saving...' : 'Save & Update'}
               </button>
             </div>
           </div>
