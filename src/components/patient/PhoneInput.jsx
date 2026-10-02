@@ -4,6 +4,8 @@ const COUNTRY_LIST = [
   { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳', placeholder: '98765 43210', hint: '10-digit Indian mobile number', length: 10 },
   { code: 'US', name: 'United States / Canada', dialCode: '+1', flag: '🇺🇸', placeholder: '(555) 019-2834', hint: '10-digit US/Canada number', length: 10 },
   { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧', placeholder: '7911 123456', hint: 'UK mobile or landline', length: 10 },
+  { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵', placeholder: '90 1234 5678', hint: 'Japanese mobile number (e.g. 90 1234 5678)', length: 10 },
+  { code: 'RU', name: 'Russia', dialCode: '+7', flag: '🇷🇺', placeholder: '912 345 6789', hint: '10-digit Russian number (e.g. 912 345 6789)', length: 10 },
   { code: 'AE', name: 'United Arab Emirates', dialCode: '+971', flag: '🇦🇪', placeholder: '50 123 4567', hint: 'UAE mobile number', length: 9 },
   { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺', placeholder: '412 345 678', hint: 'Australian number', length: 9 },
   { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬', placeholder: '8123 4567', hint: '8-digit Singapore number', length: 8 },
@@ -71,6 +73,28 @@ function formatDigits(rawDigits, country) {
     }
     if (limited.length > 3) {
       return `(${limited.slice(0, 3)}) ${limited.slice(3)}`
+    }
+    return limited
+  }
+
+  if (country.code === 'JP') {
+    const limited = digits.slice(0, 11)
+    if (limited.length > 6) {
+      return `${limited.slice(0, 2)} ${limited.slice(2, 6)} ${limited.slice(6)}`
+    }
+    if (limited.length > 2) {
+      return `${limited.slice(0, 2)} ${limited.slice(2)}`
+    }
+    return limited
+  }
+
+  if (country.code === 'RU') {
+    const limited = digits.slice(0, 10)
+    if (limited.length > 6) {
+      return `${limited.slice(0, 3)} ${limited.slice(3, 6)} ${limited.slice(6)}`
+    }
+    if (limited.length > 3) {
+      return `${limited.slice(0, 3)} ${limited.slice(3)}`
     }
     return limited
   }
@@ -154,6 +178,8 @@ export default function PhoneInput({ id, value, onChange, error }) {
               <option value="IN">🇮🇳 India (+91)</option>
               <option value="US">🇺🇸 United States / Canada (+1)</option>
               <option value="GB">🇬🇧 United Kingdom (+44)</option>
+              <option value="JP">🇯🇵 Japan (+81)</option>
+              <option value="RU">🇷🇺 Russia (+7)</option>
               <option value="AE">🇦🇪 United Arab Emirates (+971)</option>
               <option value="AU">🇦🇺 Australia (+61)</option>
               <option value="SG">🇸🇬 Singapore (+65)</option>
@@ -175,7 +201,7 @@ export default function PhoneInput({ id, value, onChange, error }) {
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          className="flex-1 px-3.5 py-2.5 bg-transparent text-slate-900 placeholder-slate-400 text-sm font-medium focus:outline-none min-w-0"
+          className="flex-1 px-3.5 py-2.5 bg-transparent text-slate-900 placeholder-slate-400 text-base sm:text-sm font-medium focus:outline-none min-w-0"
           value={parsed.localNumber}
           placeholder={currentCountry.placeholder}
           onChange={handleNumberChange}
@@ -189,6 +215,16 @@ export default function PhoneInput({ id, value, onChange, error }) {
             <span className="text-emerald-700 font-medium flex items-center gap-1">
               <span>🇮🇳</span>
               <span>India format: 10-digit mobile number</span>
+            </span>
+          ) : currentCountry.code === 'JP' ? (
+            <span className="text-slate-700 font-medium flex items-center gap-1">
+              <span>🇯🇵</span>
+              <span>Japan format: 10-digit mobile number</span>
+            </span>
+          ) : currentCountry.code === 'RU' ? (
+            <span className="text-slate-700 font-medium flex items-center gap-1">
+              <span>🇷🇺</span>
+              <span>Russia format: 10-digit phone number</span>
             </span>
           ) : (
             <span>{currentCountry.hint || 'Enter phone number with country code'}</span>
