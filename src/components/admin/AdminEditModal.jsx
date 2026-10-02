@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { COMBINED_STEPS, CONSENT_SECTION } from '../../data/formSchema'
 
 export default function AdminEditModal({
   consultation,
@@ -7,20 +8,83 @@ export default function AdminEditModal({
   onDelete,
   isSaving,
 }) {
-  const [activeTab, setActiveTab] = useState('patient')
+  const [activeTab, setActiveTab] = useState('responses') // default to responses so practitioner immediately sees answers!
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [filterFilledOnly, setFilterFilledOnly] = useState(true)
+
   const [patientData, setPatientData] = useState({
-    fullName: consultation.patient?.fullName || '',
-    email: consultation.patient?.email || '',
-    phone: consultation.patient?.phone || '',
-    dob: consultation.patient?.dob || '',
-    sexAtBirth: consultation.patient?.sexAtBirth || '',
-    occupation: consultation.patient?.occupation || '',
+    fullName: consultation.patient?.fullName || consultation.responses?.fullName || '',
+    email: consultation.patient?.email || consultation.responses?.email || '',
+    phone: consultation.patient?.phone || consultation.responses?.phone || '',
+    dob: consultation.patient?.dob || consultation.responses?.dob || '',
+    timeOfBirth: consultation.patient?.timeOfBirth || consultation.responses?.timeOfBirth || '',
+    placeOfBirth: consultation.patient?.placeOfBirth || consultation.responses?.placeOfBirth || '',
+    sexAtBirth: consultation.patient?.sexAtBirth || consultation.responses?.sexAtBirth || '',
+    occupation: consultation.patient?.occupation || consultation.responses?.occupation || '',
+    height: consultation.patient?.height || consultation.responses?.height || '',
+    currentWeight: consultation.patient?.currentWeight || consultation.responses?.currentWeight || '',
+    usualWeight: consultation.patient?.usualWeight || consultation.responses?.usualWeight || '',
   })
+
   const [status, setStatus] = useState(consultation.status || 'Pending Review')
   const [practitionerNotes, setPractitionerNotes] = useState(consultation.practitionerNotes || '')
   const [primaryDosha, setPrimaryDosha] = useState(consultation.doshaAssessment?.primaryDosha || '')
   const [doshaNotes, setDoshaNotes] = useState(consultation.doshaAssessment?.notes || '')
   const [responses, setResponses] = useState(consultation.responses || {})
+
+  // Build field mapping from schema
+  const { allSections, knownFieldIds } = useMemo(() => {
+    const map = {}
+    const sections = []
+    const ids = new Set()
+
+    COMBINED_STEPS.forEach((step) => {
+      step.subsections.forEach((sub) => {
+        const fields = sub.fields.filter((f) => f.type !== 'notice')
+        fields.forEach((f) => {
+          map[f.id] = f
+          ids.add(f.id)
+        })
+        sections.push({
+          stepId: step.id,
+          stepTitle: step.title,
+          shortTitle: step.shortTitle,
+          title: sub.title,
+          description: sub.description,
+          fields,
+        })
+      })
+    })
+
+    // Include consent section
+    const consentFields = CONSENT_SECTION.fields.filter((f) => f.type !== 'notice')
+    consentFields.forEach((f) => {
+      map[f.id] = f
+      ids.add(f.id)
+    })
+    sections.push({
+      stepId: 6,
+      stepTitle: 'Review & Declaration',
+      shortTitle: 'Declaration',
+      title: CONSENT_SECTION.title,
+      description: CONSENT_SECTION.description,
+      fields: consentFields,
+    })
+
+    return { fieldMap: map, allSections: sections, knownFieldIds: ids }
+  }, [])
+
+  // Legacy or unmapped fields in responses
+  const unmappedEntries = useMemo(() => {
+    return Object.entries(responses).filter(([key]) => !knownFieldIds.has(key))
+  }, [responses, knownFieldIds])
+
+  // Count answered questions
+  const answeredCount = useMemo(() => {
+    return Object.values(responses).filter(
+      (v) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)
+    ).length
+  }, [responses])
 
   const handlePatientFieldChange = (field, val) => {
     setPatientData((prev) => ({ ...prev, [field]: val }))
@@ -43,41 +107,125 @@ export default function AdminEditModal({
     })
   }
 
+  // Format value display in Clinical View
+  const renderFormattedValue = (val, fieldDef) => {
+    if (val === undefined || val === null || val === '') {
+      return <span className="text-slate-400 italic text-xs">Not answered</span>
+    }
+
+    const type = fieldDef?.type
+
+    if (Array.isArray(val)) {
+      if (val.length === 0) {
+        return <span className="text-slate-400 italic text-xs">None selected</span>
+      }
+      return (
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {val.map((item, idx) => (
+            <span
+              key={idx}
+              className="inline-block bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-2xs"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      )
+    }
+
+    if (type === 'scale') {
+      return (
+        <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-200 px-3 py-1 rounded-lg text-xs font-bold shadow-2xs">
+          <span className="text-sm font-extrabold text-blue-600">{val}</span> / 10
+        </div>
+      )
+    }
+
+    if (type === 'file' || (typeof val === 'object' && val?.dataUrl)) {
+      const src = typeof val === 'string' ? val : val?.dataUrl
+      const name = typeof val === 'object' ? val?.name : 'Uploaded file'
+      if (!src) return <span className="text-slate-400 italic text-xs">No file uploaded</span>
+      return (
+        <div className="flex items-center gap-3 mt-1.5 p-2 bg-white border border-slate-200 rounded-xl max-w-sm shadow-2xs">
+          <img
+            src={src}
+            alt="Upload thumbnail"
+            className="w-14 h-14 object-cover rounded-lg border border-slate-200 bg-slate-50 shrink-0 cursor-pointer hover:opacity-90"
+            onClick={() => window.open(src, '_blank')}
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-slate-800 truncate">{name}</p>
+            <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Attached file
+            </p>
+            <a
+              href={src}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-blue-600 font-semibold hover:underline inline-flex items-center gap-1 mt-0.5"
+            >
+              View full size ↗
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    if (type === 'radio') {
+      return (
+        <span className="inline-block bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-0.5 rounded-md text-xs font-semibold">
+          {String(val)}
+        </span>
+      )
+    }
+
+    return (
+      <div className="text-sm text-slate-800 whitespace-pre-line leading-relaxed font-medium bg-white/70 p-2 rounded-lg border border-slate-200/50">
+        {String(val)}
+      </div>
+    )
+  }
+
   const dateDisplay = consultation.submittedAt || consultation.createdAt
     ? new Date(consultation.submittedAt || consultation.createdAt).toLocaleString()
     : 'Recently'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col my-auto overflow-hidden">
+        
         {/* Modal Top Header */}
         <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 to-sky-500 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <polyline points="16 11 18 13 22 9" />
               </svg>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <h3 className="text-lg font-extrabold text-slate-900">
-                  {patientData.fullName || 'Patient Details'}
+                  {patientData.fullName || 'Patient Assessment'}
                 </h3>
-                <span className="font-mono text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-bold">
+                <span className="font-mono text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-md font-bold">
                   {consultation.referenceId}
                 </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  {status}
+                </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Submitted on {dateDisplay}
+              <p className="text-xs text-slate-500 mt-0.5">
+                Submitted on {dateDisplay} • {answeredCount} responses recorded
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 cursor-pointer transition-colors"
             onClick={onClose}
           >
             &times;
@@ -85,52 +233,205 @@ export default function AdminEditModal({
         </div>
 
         {/* Modal Tabs Bar */}
-        <div className="flex border-b border-slate-200 px-6 bg-white gap-2">
+        <div className="flex border-b border-slate-200 px-6 bg-white gap-3">
           <button
             type="button"
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-              activeTab === 'patient'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-            onClick={() => setActiveTab('patient')}
-          >
-            Patient Contact & Status
-          </button>
-          <button
-            type="button"
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-              activeTab === 'notes'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-            onClick={() => setActiveTab('notes')}
-          >
-            Practitioner Clinical Notes & Dosha
-          </button>
-          <button
-            type="button"
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === 'responses'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
             onClick={() => setActiveTab('responses')}
           >
-            Assessment Questionnaire ({Object.keys(responses).length})
+            <span>Assessment Responses</span>
+            <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.2 rounded-full font-extrabold">
+              {answeredCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'patient'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+            onClick={() => setActiveTab('patient')}
+          >
+            Patient Demographics & Vitals
+          </button>
+
+          <button
+            type="button"
+            className={`py-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'notes'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+            onClick={() => setActiveTab('notes')}
+          >
+            Practitioner Notes & Dosha
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/40">
+          
+          {/* TAB 1: RESPONSES (STRUCTURED CLINICAL VIEW / EDIT) */}
+          {activeTab === 'responses' && (
+            <div className="space-y-5">
+              {/* Controls bar */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Patient Consultation Intake Responses
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Organized by assessment steps matching the patient intake questionnaire.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      checked={filterFilledOnly}
+                      onChange={(e) => setFilterFilledOnly(e.target.checked)}
+                    />
+                    <span>Show only answered</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      isEditMode
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                    onClick={() => setIsEditMode((prev) => !prev)}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    <span>{isEditMode ? 'Done Editing' : 'Edit Responses'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sections list */}
+              <div className="space-y-5">
+                {allSections.map((sec, sIdx) => {
+                  const visibleFields = sec.fields.filter((field) => {
+                    if (!filterFilledOnly) return true
+                    const val = responses[field.id]
+                    return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)
+                  })
+
+                  if (visibleFields.length === 0 && filterFilledOnly) {
+                    return null
+                  }
+
+                  return (
+                    <div
+                      key={sIdx}
+                      className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4"
+                    >
+                      <div className="border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                            Step {sec.stepId}
+                          </span>
+                          <h5 className="font-extrabold text-sm text-slate-900">{sec.title}</h5>
+                        </div>
+                        {sec.description && (
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">{sec.description}</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {visibleFields.map((field) => {
+                          const val = responses[field.id]
+
+                          return (
+                            <div
+                              key={field.id}
+                              className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-3.5 space-y-1.5"
+                            >
+                              <div className="text-xs font-bold text-slate-700 leading-snug">
+                                {field.label}
+                              </div>
+
+                              {isEditMode ? (
+                                Array.isArray(val) ? (
+                                  <input
+                                    type="text"
+                                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={val.join(', ')}
+                                    onChange={(e) =>
+                                      handleResponseChange(
+                                        field.id,
+                                        e.target.value.split(',').map((s) => s.trim())
+                                      )
+                                    }
+                                  />
+                                ) : (
+                                  <textarea
+                                    rows={2}
+                                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={val || ''}
+                                    onChange={(e) => handleResponseChange(field.id, e.target.value)}
+                                  />
+                                )
+                              ) : (
+                                <div>{renderFormattedValue(val, field)}</div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* Additional / Unmapped fields fallback (if any exist from earlier submissions) */}
+                {unmappedEntries.length > 0 && (
+                  <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-xs space-y-3">
+                    <div className="border-b border-amber-100 pb-2.5">
+                      <h5 className="font-extrabold text-sm text-amber-900">
+                        Additional Submitted Responses ({unmappedEntries.length})
+                      </h5>
+                      <p className="text-xs text-amber-700">
+                        Data fields recorded from earlier form submissions
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {unmappedEntries.map(([key, val]) => (
+                        <div key={key} className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-3 space-y-1">
+                          <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                            {key}
+                          </span>
+                          <div>{renderFormattedValue(val, { type: 'text' })}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: PATIENT DEMOGRAPHICS & VITALS */}
           {activeTab === 'patient' && (
             <div className="space-y-5">
               <div className="bg-blue-50/50 border border-blue-200/60 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <div className="text-xs font-bold text-blue-900 uppercase tracking-wide">
-                    Consultation Status
+                    Workflow Stage
                   </div>
-                  <div className="text-xs text-blue-700">Update workflow stage for this patient</div>
+                  <div className="text-xs text-blue-700">Update current consultation state</div>
                 </div>
 
                 <select
@@ -145,163 +446,194 @@ export default function AdminEditModal({
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Full Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.fullName}
-                    onChange={(e) => handlePatientFieldChange('fullName', e.target.value)}
-                  />
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">
+                  Contact & Identification
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Full Name</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.fullName}
+                      onChange={(e) => handlePatientFieldChange('fullName', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Email Address</label>
+                    <input
+                      type="email"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.email}
+                      onChange={(e) => handlePatientFieldChange('email', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                    <input
+                      type="tel"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.phone}
+                      onChange={(e) => handlePatientFieldChange('phone', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.dob}
+                      onChange={(e) => handlePatientFieldChange('dob', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Time of Birth</label>
+                    <input
+                      type="time"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.timeOfBirth}
+                      onChange={(e) => handlePatientFieldChange('timeOfBirth', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Place of Birth</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.placeOfBirth}
+                      onChange={(e) => handlePatientFieldChange('placeOfBirth', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Sex at Birth</label>
+                    <select
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.sexAtBirth}
+                      onChange={(e) => handlePatientFieldChange('sexAtBirth', e.target.value)}
+                    >
+                      <option value="">Select</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                      <option value="Intersex">Intersex</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Occupation</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.occupation}
+                      onChange={(e) => handlePatientFieldChange('occupation', e.target.value)}
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Email Address</label>
-                  <input
-                    type="email"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.email}
-                    onChange={(e) => handlePatientFieldChange('email', e.target.value)}
-                  />
-                </div>
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2 pt-3">
+                  Physical Body Metrics
+                </h4>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.phone}
-                    onChange={(e) => handlePatientFieldChange('phone', e.target.value)}
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Height</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.height}
+                      onChange={(e) => handlePatientFieldChange('height', e.target.value)}
+                      placeholder="e.g. 5 ft 8 in"
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Date of Birth</label>
-                  <input
-                    type="date"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.dob}
-                    onChange={(e) => handlePatientFieldChange('dob', e.target.value)}
-                  />
-                </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Current Weight</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.currentWeight}
+                      onChange={(e) => handlePatientFieldChange('currentWeight', e.target.value)}
+                      placeholder="e.g. 68 kg"
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Sex at Birth</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700">Usual / Comfortable Weight</label>
+                    <input
+                      type="text"
+                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={patientData.usualWeight}
+                      onChange={(e) => handlePatientFieldChange('usualWeight', e.target.value)}
+                      placeholder="e.g. 65 kg"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: NOTES & DOSHA */}
+          {activeTab === 'notes' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800">Primary Dosha Constitution Diagnosis</label>
                   <select
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.sexAtBirth}
-                    onChange={(e) => handlePatientFieldChange('sexAtBirth', e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    value={primaryDosha}
+                    onChange={(e) => setPrimaryDosha(e.target.value)}
                   >
-                    <option value="">Select</option>
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                    <option value="Intersex">Intersex</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
+                    <option value="">Select Primary Dosha Diagnosis</option>
+                    <option value="Vata Dominant">Vata Dominant (Air & Ether)</option>
+                    <option value="Pitta Dominant">Pitta Dominant (Fire & Water)</option>
+                    <option value="Kapha Dominant">Kapha Dominant (Earth & Water)</option>
+                    <option value="Vata-Pitta">Vata-Pitta</option>
+                    <option value="Pitta-Kapha">Pitta-Kapha</option>
+                    <option value="Vata-Kapha">Vata-Kapha</option>
+                    <option value="Tridoshic (Balanced)">Tridoshic (Balanced)</option>
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Occupation</label>
-                  <input
-                    type="text"
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800">Dosha & Agni Clinical Assessment Notes</label>
+                  <textarea
+                    rows={3}
+                    value={doshaNotes}
+                    onChange={(e) => setDoshaNotes(e.target.value)}
+                    placeholder="e.g. Aggravated Vata in colon causing irregular elimination; Agni is Vishama..."
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={patientData.occupation}
-                    onChange={(e) => handlePatientFieldChange('occupation', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800">Practitioner Treatment Plan & Prescription Notes</label>
+                  <textarea
+                    rows={6}
+                    value={practitionerNotes}
+                    onChange={(e) => setPractitionerNotes(e.target.value)}
+                    placeholder="Private internal practitioner notes, herbal recommendations, lifestyle advice..."
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'notes' && (
-            <div className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Primary Dosha Constitution Diagnosis</label>
-                <select
-                  value={primaryDosha}
-                  onChange={(e) => setPrimaryDosha(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Unassessed / Pending Consultation</option>
-                  <option value="Vata">Vata Dominant (Air & Space)</option>
-                  <option value="Pitta">Pitta Dominant (Fire & Water)</option>
-                  <option value="Kapha">Kapha Dominant (Earth & Water)</option>
-                  <option value="Vata-Pitta">Vata-Pitta Dual</option>
-                  <option value="Pitta-Kapha">Pitta-Kapha Dual</option>
-                  <option value="Vata-Kapha">Vata-Kapha Dual</option>
-                  <option value="Tridoshic (Sama)">Tridoshic (Balanced Sama)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Dosha & Vikriti Clinical Findings</label>
-                <textarea
-                  rows={3}
-                  value={doshaNotes}
-                  onChange={(e) => setDoshaNotes(e.target.value)}
-                  placeholder="e.g. Aggravated Vata in colon causing irregular digestion..."
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Practitioner Treatment Plan & Prescription Notes</label>
-                <textarea
-                  rows={6}
-                  value={practitionerNotes}
-                  onChange={(e) => setPractitionerNotes(e.target.value)}
-                  placeholder="Private internal practitioner notes, herbal recommendations..."
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'responses' && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500">
-                All patient answers submitted during intake. You can edit any field if needed.
-              </p>
-
-              <div className="space-y-3">
-                {Object.entries(responses).map(([key, val]) => (
-                  <div key={key} className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-1">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                      {key}
-                    </span>
-                    {Array.isArray(val) ? (
-                      <input
-                        type="text"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={val.join(', ')}
-                        onChange={(e) =>
-                          handleResponseChange(
-                            key,
-                            e.target.value.split(',').map((s) => s.trim())
-                          )
-                        }
-                      />
-                    ) : (
-                      <textarea
-                        rows={2}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={val || ''}
-                        onChange={(e) => handleResponseChange(key, e.target.value)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Modal Bottom Action Footer */}
         <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg cursor-pointer"
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg cursor-pointer transition-colors"
             onClick={() => {
               if (window.confirm(`Delete consultation record ${consultation.referenceId}?`)) {
                 onDelete(consultation._id || consultation.id || consultation.referenceId)
@@ -317,7 +649,7 @@ export default function AdminEditModal({
               className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
               onClick={onClose}
             >
-              Cancel
+              Close
             </button>
 
             <button
@@ -334,4 +666,3 @@ export default function AdminEditModal({
     </div>
   )
 }
-
