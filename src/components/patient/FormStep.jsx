@@ -12,6 +12,40 @@ export default function FormStep({
 }) {
   return (
     <div className="w-full max-w-4xl space-y-6">
+      {/* Welcome & Namaskar Card on Step 1 */}
+      {isFirstStep && (
+        <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-sky-50/60 border border-emerald-200/90 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="text-3xl sm:text-4xl select-none shrink-0">🌿</span>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Ayurvedic Pre-Consultation Health Assessment
+              </h1>
+              <div className="text-emerald-800 font-bold text-base mt-1 flex items-center gap-2">
+                <span>Namaskar 🙏</span>
+                <span className="text-slate-300 font-normal">•</span>
+                <span className="text-slate-700 font-semibold">Welcome</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-sm sm:text-base text-slate-700 space-y-3 leading-relaxed border-t border-emerald-200/60 pt-4">
+            <p>
+              Before your consultation, we would like to know a little more about you—your health, digestion, eating habits, daily routine, sleep, lifestyle, and overall well-being.
+            </p>
+            <p>
+              Your answers will help us understand you better and make your consultation more personalised and meaningful.
+            </p>
+            <div className="bg-white/80 border border-emerald-200/80 rounded-xl p-3.5 text-slate-800 text-sm">
+              Please answer the questions based on <strong>what is generally true for you most of the time</strong>, rather than an occasional experience.
+            </div>
+            <p className="text-emerald-900 font-medium text-sm">
+              There are no right or wrong answers. <strong>Simply share what feels true for you.</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Step Header */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide uppercase mb-3">

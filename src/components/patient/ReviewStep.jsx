@@ -42,6 +42,27 @@ export default function ReviewStep({
         </span>
       )
     }
+    if (type === 'file') {
+      const src = typeof val === 'string' ? val : val?.dataUrl
+      const name = typeof val === 'object' ? val?.name : 'Tongue photograph'
+      if (!src) return <span className="text-slate-400 italic font-normal text-xs">No photograph uploaded</span>
+      return (
+        <div className="flex items-center gap-3 mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-lg max-w-sm">
+          <img
+            src={src}
+            alt="Tongue photo preview"
+            className="w-14 h-14 object-cover rounded-md border border-slate-200 bg-white shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-800 truncate">{name}</p>
+            <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Attached photograph
+            </p>
+          </div>
+        </div>
+      )
+    }
     return <span className="text-slate-900 font-medium text-sm leading-relaxed">{String(val)}</span>
   }
 
@@ -51,6 +72,7 @@ export default function ReviewStep({
   steps.forEach((step) => {
     step.subsections.forEach((sub) => {
       sub.fields.forEach((f) => {
+        if (f.showIf && !f.showIf(formData)) return
         if (f.type !== 'notice') {
           totalCount++
           const val = formData[f.id]
@@ -200,6 +222,7 @@ export default function ReviewStep({
               {step.subsections.map((sub, sIdx) => {
                 const visibleFields = sub.fields.filter((f) => {
                   if (f.type === 'notice') return false
+                  if (f.showIf && !f.showIf(formData)) return false
                   if (!filterFilledOnly) return true
                   const val = formData[f.id]
                   return val !== undefined && val !== '' && !(Array.isArray(val) && val.length === 0)

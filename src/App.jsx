@@ -133,12 +133,22 @@ export default function App() {
     const newErrors = {}
     step.subsections.forEach((sub) => {
       sub.fields.forEach((field) => {
+        if (field.showIf && !field.showIf(formData)) {
+          return
+        }
         if (field.required) {
           const val = formData[field.id]
           if (val === undefined || val === null || val === '') {
             newErrors[field.id] = `${field.label} is required`
           } else if (Array.isArray(val) && val.length === 0) {
             newErrors[field.id] = `Please select at least one option`
+          } else if (field.id === 'phone' && typeof val === 'string') {
+            const digits = val.replace(/\D/g, '')
+            if (val.startsWith('+91') && digits.length < 12) {
+              newErrors[field.id] = 'Please enter a valid 10-digit Indian mobile number'
+            } else if (digits.length < 7) {
+              newErrors[field.id] = 'Please enter a valid phone number'
+            }
           }
         }
       })
@@ -324,6 +334,10 @@ export default function App() {
         email: formData.email || "",
         phone: formData.phone || "",
         dob: formData.dob || "",
+        timeOfBirth: formData.timeOfBirth || "",
+        placeOfBirth: formData.placeOfBirth || "",
+        sexAtBirth: formData.sexAtBirth || "",
+        occupation: formData.occupation || "",
       },
       responses: formData,
     };
