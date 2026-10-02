@@ -333,6 +333,7 @@ export default function App() {
         fullName: formData.fullName || "",
         email: formData.email || "",
         phone: formData.phone || "",
+        address: formData.address || "",
         dob: formData.dob || "",
         timeOfBirth: formData.timeOfBirth || "",
         placeOfBirth: formData.placeOfBirth || "",
@@ -438,7 +439,7 @@ export default function App() {
               />
             )}
 
-            <main className={`flex-1 p-3 sm:p-6 lg:p-10 flex flex-col items-center min-w-0 ${isSubmitted ? 'w-full' : ''}`}>
+            <main className={`flex-1 p-4 sm:p-8 lg:p-10 flex flex-col items-center min-w-0 ${isSubmitted ? 'w-full' : ''}`}>
               {isSubmitted ? (
                 <div className="space-y-4 flex flex-col items-center">
                   <SubmissionSuccess
@@ -489,27 +490,32 @@ export default function App() {
         )}
       </div>
 
-      {/* Professional Footer */}
-      <footer className="mt-auto py-5 px-4 text-center text-xs text-slate-400 border-t border-slate-200/70 bg-white/40">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div className="text-[11px] sm:text-xs">
-            © {new Date().getFullYear()} AyurHealth Clinic • Vaidya Shivansh • Confidential Patient Assessment
-          </div>
-          <div className="flex items-center gap-4 text-[11px] sm:text-xs text-slate-500">
-            <a href="tel:+918858872301" className="hover:text-blue-600 transition-colors font-semibold">
-              Clinic: +91 88588 72301
-            </a>
-            <span className="text-slate-300">•</span>
-            <button
-              type="button"
-              onClick={() => handleViewChange(currentView === 'admin' ? 'form' : 'admin')}
-              className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-            >
-              {currentView === 'admin' ? '← Patient Form' : 'Practitioner Portal'}
-            </button>
-          </div>
-        </div>
-      </footer>
+      {/* Floating Fast Switcher Pill */}
+      {/* <aside aria-label="Panel Navigation" className="fixed bottom-5 right-5 z-50">
+        <button
+          type="button"
+          onClick={() => handleViewChange(currentView === 'admin' ? 'form' : 'admin')}
+          className="group inline-flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 hover:bg-slate-900 text-white rounded-full text-xs font-bold shadow-2xl shadow-slate-900/30 backdrop-blur-md border border-slate-700/60 transition-all hover:scale-105 active:scale-95 cursor-pointer ring-2 ring-white/20"
+          title={currentView === 'admin' ? 'Switch to User Intake Form' : 'Switch to Admin Management Portal'}
+        >
+          {currentView === 'admin' ? (
+            <>
+              <svg className="w-4 h-4 text-sky-400 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>User Panel (Form)</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4 text-emerald-400 group-hover:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span>Admin Panel</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </>
+          )}
+        </button>
+      </aside> */}
     </div>
   )
 }

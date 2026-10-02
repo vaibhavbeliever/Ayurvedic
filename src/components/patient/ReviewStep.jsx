@@ -85,11 +85,11 @@ export default function ReviewStep({
   })
 
   return (
-    <div className="w-full max-w-4xl space-y-4 sm:space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
       {/* Patient Header Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 text-white rounded-2xl p-4 sm:p-6 md:p-8 shadow-md">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 border-b border-white/20 pb-4 sm:pb-5 mb-4 sm:mb-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 text-white rounded-2xl p-6 sm:p-8 shadow-md">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/20 pb-5 mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-white text-xs font-bold uppercase tracking-wider">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="9 11 12 14 22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
@@ -99,10 +99,10 @@ export default function ReviewStep({
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-blue-700 text-xs font-bold hover:bg-blue-50 transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white text-blue-700 text-xs font-bold hover:bg-blue-50 transition-all shadow-xs cursor-pointer"
             onClick={() => window.print()}
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 6 2 18 2 18 9" />
               <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
               <rect x="6" y="14" width="12" height="8" />
@@ -111,36 +111,36 @@ export default function ReviewStep({
           </button>
         </div>
 
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-snug">
+        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
           Review Your Pre-Consultation Assessment
         </h2>
-        <p className="mt-1 text-blue-100 text-xs sm:text-sm max-w-2xl leading-relaxed">
+        <p className="mt-1.5 text-blue-100 text-sm max-w-2xl leading-relaxed">
           Please verify your health information below before transmitting to your Ayurvedic practitioner.
         </p>
 
         {/* Quick Patient Meta Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-white/20">
-          <div className="bg-white/10 rounded-xl p-2.5 sm:p-3 backdrop-blur-xs">
-            <div className="text-[10px] sm:text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Patient</div>
-            <div className="font-bold text-xs sm:text-sm truncate mt-0.5">{formData.fullName || '—'}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/20">
+          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+            <div className="text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Patient</div>
+            <div className="font-bold text-sm truncate mt-0.5">{formData.fullName || '—'}</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2.5 sm:p-3 backdrop-blur-xs">
-            <div className="text-[10px] sm:text-[11px] font-semibold text-blue-200 uppercase tracking-wide">DOB</div>
-            <div className="font-bold text-xs sm:text-sm truncate mt-0.5">{formData.dob || '—'}</div>
+          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+            <div className="text-[11px] font-semibold text-blue-200 uppercase tracking-wide">DOB</div>
+            <div className="font-bold text-sm truncate mt-0.5">{formData.dob || '—'}</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2.5 sm:p-3 backdrop-blur-xs">
-            <div className="text-[10px] sm:text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Email</div>
-            <div className="font-bold text-xs sm:text-sm truncate mt-0.5">{formData.email || '—'}</div>
+          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+            <div className="text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Email</div>
+            <div className="font-bold text-sm truncate mt-0.5">{formData.email || '—'}</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2.5 sm:p-3 backdrop-blur-xs">
-            <div className="text-[10px] sm:text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Completed</div>
-            <div className="font-bold text-xs sm:text-sm text-sky-200 mt-0.5">{answeredCount} of {totalCount}</div>
+          <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+            <div className="text-[11px] font-semibold text-blue-200 uppercase tracking-wide">Completed</div>
+            <div className="font-bold text-sm text-sky-200 mt-0.5">{answeredCount} of {totalCount}</div>
           </div>
         </div>
       </div>
 
       {/* Consent & Declaration Section Card */}
-      <div className="bg-white border-2 border-blue-500/30 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xs space-y-4 sm:space-y-5">
+      <div className="bg-white border-2 border-blue-500/30 rounded-2xl p-6 sm:p-8 shadow-xs space-y-5">
         <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
             ✓
@@ -258,7 +258,7 @@ export default function ReviewStep({
       </div>
 
       {/* Bottom Submit Action Bar */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <button
           type="button"
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 cursor-pointer"
@@ -272,7 +272,7 @@ export default function ReviewStep({
           <span>Back to Step 5</span>
         </button>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <span className="text-xs text-slate-500 text-center sm:text-right hidden sm:inline">
             Transmits questionnaire payload to backend
           </span>

@@ -18,6 +18,7 @@ export default function AdminEditModal({
     fullName: consultation.patient?.fullName || consultation.responses?.fullName || '',
     email: consultation.patient?.email || consultation.responses?.email || '',
     phone: consultation.patient?.phone || consultation.responses?.phone || '',
+    address: consultation.patient?.address || consultation.responses?.address || '',
     dob: consultation.patient?.dob || consultation.responses?.dob || '',
     timeOfBirth: consultation.patient?.timeOfBirth || consultation.responses?.timeOfBirth || '',
     placeOfBirth: consultation.patient?.placeOfBirth || consultation.responses?.placeOfBirth || '',
@@ -487,6 +488,17 @@ export default function AdminEditModal({
                         className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={patientData.phone}
                         onChange={(e) => handlePatientFieldChange('phone', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+                      <label className="text-xs font-bold text-slate-700">Residential Address / City & Country</label>
+                      <input
+                        type="text"
+                        className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={patientData.address}
+                        onChange={(e) => handlePatientFieldChange('address', e.target.value)}
+                        placeholder="House/Street, City, State, Country, Postal Code"
                       />
                     </div>
 

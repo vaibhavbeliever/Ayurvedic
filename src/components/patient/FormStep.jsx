@@ -11,17 +11,17 @@ export default function FormStep({
   totalSteps
 }) {
   return (
-    <div className="w-full max-w-4xl space-y-4 sm:space-y-6">
+    <div className="w-full max-w-4xl space-y-6">
       {/* Welcome & Namaskar Card on Step 1 */}
       {isFirstStep && (
-        <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-sky-50/60 border border-emerald-200/90 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xs space-y-3.5 sm:space-y-4">
-          <div className="flex items-start sm:items-center gap-2.5 sm:gap-3">
+        <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-sky-50/60 border border-emerald-200/90 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-start sm:items-center gap-3">
             <span className="text-3xl sm:text-4xl select-none shrink-0">🌿</span>
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Ayurvedic Pre-Consultation Health Assessment
               </h1>
-              <div className="text-emerald-800 font-bold text-sm sm:text-base mt-0.5 flex items-center gap-2">
+              <div className="text-emerald-800 font-bold text-base mt-1 flex items-center gap-2">
                 <span>Namaskar 🙏</span>
                 <span className="text-slate-300 font-normal">•</span>
                 <span className="text-slate-700 font-semibold">Welcome</span>
@@ -29,17 +29,17 @@ export default function FormStep({
             </div>
           </div>
 
-          <div className="text-xs sm:text-sm md:text-base text-slate-700 space-y-2.5 sm:space-y-3 leading-relaxed border-t border-emerald-200/60 pt-3 sm:pt-4">
+          <div className="text-sm sm:text-base text-slate-700 space-y-3 leading-relaxed border-t border-emerald-200/60 pt-4">
             <p>
               Before your consultation, we would like to know a little more about you—your health, digestion, eating habits, daily routine, sleep, lifestyle, and overall well-being.
             </p>
             <p>
               Your answers will help us understand you better and make your consultation more personalised and meaningful.
             </p>
-            <div className="bg-white/80 border border-emerald-200/80 rounded-xl p-3 sm:p-3.5 text-slate-800 text-xs sm:text-sm">
+            <div className="bg-white/80 border border-emerald-200/80 rounded-xl p-3.5 text-slate-800 text-sm">
               Please answer the questions based on <strong>what is generally true for you most of the time</strong>, rather than an occasional experience.
             </div>
-            <p className="text-emerald-900 font-medium text-xs sm:text-sm">
+            <p className="text-emerald-900 font-medium text-sm">
               There are no right or wrong answers. <strong>Simply share what feels true for you.</strong>
             </p>
           </div>
@@ -47,15 +47,15 @@ export default function FormStep({
       )}
 
       {/* Step Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xs">
-        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] sm:text-xs font-semibold tracking-wide uppercase mb-2 sm:mb-3">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide uppercase mb-3">
           <span>Step {step.id} of {totalSteps}</span>
         </div>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           {step.title}
         </h2>
         {step.description && (
-          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm md:text-base text-slate-600 leading-relaxed">
+          <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed">
             {step.description}
           </p>
         )}
@@ -65,11 +65,11 @@ export default function FormStep({
       {step.subsections.map((sub, idx) => (
         <div
           key={idx}
-          className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xs space-y-4 sm:space-y-6"
+          className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6"
         >
-          <div className="border-b border-slate-100 pb-3 sm:pb-4">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold shrink-0">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">
                 {idx + 1}
               </span>
               <span>{sub.title}</span>
@@ -81,7 +81,7 @@ export default function FormStep({
             )}
           </div>
 
-          <div className="space-y-4 sm:space-y-5">
+          <div className="space-y-5">
             {sub.fields.map((field) => (
               <FormField
                 key={field.id}
@@ -96,11 +96,11 @@ export default function FormStep({
       ))}
 
       {/* Navigation Buttons Bar */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:p-6 shadow-xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-xs flex items-center justify-between gap-4">
         {!isFirstStep ? (
           <button
             type="button"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all shadow-xs cursor-pointer"
             onClick={onPrev}
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -110,12 +110,12 @@ export default function FormStep({
             <span>Previous Step</span>
           </button>
         ) : (
-          <div className="hidden sm:block" />
+          <div />
         )}
 
         <button
           type="button"
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/25 cursor-pointer sm:ml-auto"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/25 cursor-pointer ml-auto"
           onClick={onNext}
         >
           <span>Continue to {step.id === totalSteps ? 'Review' : 'Next Step'}</span>

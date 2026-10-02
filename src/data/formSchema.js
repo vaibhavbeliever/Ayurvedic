@@ -48,6 +48,13 @@ export const COMBINED_STEPS = [
           { id: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'name@example.com' },
           { id: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '+1 555-0123' },
           {
+            id: 'address',
+            label: 'Address / City & Country',
+            type: 'text',
+            placeholder: 'e.g. Street, City, State, Country, Postal Code',
+            help: 'Where you currently reside'
+          },
+          {
             id: 'previousConsultation',
             label: 'Have you had an Ayurvedic consultation before?',
             type: 'radio',
