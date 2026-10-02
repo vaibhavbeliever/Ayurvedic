@@ -1,11 +1,13 @@
 import PhoneInput from './PhoneInput'
 import { useRef, useState } from 'react'
+import ImageLightbox from '../shared/ImageLightbox'
 
 export default function FormField({ field, value, onChange, error }) {
   const { id, label, type, required, placeholder, help, options, min, max, minLabel, maxLabel } = field
   const fileInputRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showLightbox, setShowLightbox] = useState(false)
 
   const handleTextChange = (e) => {
     onChange(id, e.target.value)
@@ -314,7 +316,9 @@ export default function FormField({ field, value, onChange, error }) {
                 <img
                   src={typeof value === 'object' ? value.dataUrl : value}
                   alt="Tongue preview"
-                  className="w-16 h-16 object-cover rounded-lg border border-slate-200 shadow-xs shrink-0 bg-white"
+                  className="w-16 h-16 object-cover rounded-lg border border-slate-200 shadow-xs shrink-0 bg-white cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                  onClick={() => setShowLightbox(true)}
+                  title="Click to view full size"
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">
@@ -326,11 +330,25 @@ export default function FormField({ field, value, onChange, error }) {
                     </svg>
                     Photo attached successfully
                   </p>
-                  {typeof value === 'object' && value.size && (
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {(value.size / 1024).toFixed(0)} KB
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2.5 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowLightbox(true)}
+                      className="text-xs text-blue-600 font-bold hover:text-blue-800 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View full size</span>
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M15 3h6v6" />
+                        <path d="M10 14L21 3" />
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      </svg>
+                    </button>
+                    {typeof value === 'object' && value.size && (
+                      <span className="text-[11px] text-slate-400">
+                        &bull; {(value.size / 1024).toFixed(0)} KB
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -394,6 +412,15 @@ export default function FormField({ field, value, onChange, error }) {
       )}
 
       {error && <p className="text-xs text-rose-600 font-medium mt-0.5">{error}</p>}
+
+      {/* Full size lightbox preview */}
+      {showLightbox && value && (
+        <ImageLightbox
+          src={typeof value === 'object' ? value.dataUrl : value}
+          title={typeof value === 'object' ? value.name : (field.label || 'Tongue photograph')}
+          onClose={() => setShowLightbox(false)}
+        />
+      )}
     </div>
   )
 }

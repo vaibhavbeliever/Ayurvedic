@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CONSENT_SECTION } from '../../data/formSchema'
 import FormField from './FormField'
+import ImageLightbox from '../shared/ImageLightbox'
 
 export default function ReviewStep({
   steps,
@@ -14,6 +15,7 @@ export default function ReviewStep({
   submitError
 }) {
   const [filterFilledOnly, setFilterFilledOnly] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState(null)
 
   // Format value display
   const renderValue = (val, type) => {
@@ -47,18 +49,31 @@ export default function ReviewStep({
       const name = typeof val === 'object' ? val?.name : 'Tongue photograph'
       if (!src) return <span className="text-slate-400 italic font-normal text-xs">No photograph uploaded</span>
       return (
-        <div className="flex items-center gap-3 mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-lg max-w-sm">
+        <div className="flex items-center gap-3 mt-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
           <img
             src={src}
             alt="Tongue photo preview"
-            className="w-14 h-14 object-cover rounded-md border border-slate-200 bg-white shrink-0"
+            className="w-14 h-14 object-cover rounded-lg border border-slate-200 bg-white shrink-0 cursor-pointer hover:opacity-90 hover:scale-105 transition-all shadow-2xs"
+            onClick={() => setLightboxImage({ src, title: name })}
           />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-800 truncate">{name}</p>
+            <p className="text-xs font-bold text-slate-800 truncate">{name}</p>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Attached photograph
             </p>
+            <button
+              type="button"
+              onClick={() => setLightboxImage({ src, title: name })}
+              className="text-[11px] text-blue-600 font-bold hover:text-blue-800 inline-flex items-center gap-1 mt-0.5 cursor-pointer"
+            >
+              <span>View full size</span>
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M15 3h6v6" />
+                <path d="M10 14L21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              </svg>
+            </button>
           </div>
         </div>
       )
@@ -300,6 +315,15 @@ export default function ReviewStep({
           </button>
         </div>
       </div>
+
+      {/* Full Size Image Lightbox Modal */}
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.src}
+          title={lightboxImage.title}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
     </div>
   )
 }
