@@ -15,6 +15,7 @@ export default function AdminEditModal({
     dob: consultation.patient?.dob || '',
     sexAtBirth: consultation.patient?.sexAtBirth || '',
     occupation: consultation.patient?.occupation || '',
+    address: consultation.patient?.address || consultation.responses?.address || '',
   })
   const [status, setStatus] = useState(consultation.status || 'Pending Review')
   const [practitionerNotes, setPractitionerNotes] = useState(consultation.practitionerNotes || '')
@@ -208,6 +209,17 @@ export default function AdminEditModal({
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={patientData.occupation}
                     onChange={(e) => handlePatientFieldChange('occupation', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-700">Residential Address / City & Country</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 123 Green Park, New Delhi, India"
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={patientData.address}
+                    onChange={(e) => handlePatientFieldChange('address', e.target.value)}
                   />
                 </div>
               </div>

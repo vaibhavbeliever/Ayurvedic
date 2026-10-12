@@ -377,110 +377,201 @@ export default function AdminPanel({ onBackToForm }) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  <th className="py-3 px-5">Patient Name</th>
-                  <th className="py-3 px-5">Reference ID</th>
-                  <th className="py-3 px-5">Contact Details</th>
-                  <th className="py-3 px-5">Submission Date</th>
-                  <th className="py-3 px-5">Status</th>
-                  <th className="py-3 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {consultations.map((item) => {
-                  const patient = item.patient || {};
-                  const status = item.status || "Pending Review";
-                  const dateStr =
-                    item.submittedAt || item.createdAt
-                      ? new Date(
-                          item.submittedAt || item.createdAt,
-                        ).toLocaleDateString()
-                      : "—";
+          <div>
+            {/* Mobile Cards View (Visible only on small screens < 640px) */}
+            <div className="sm:hidden divide-y divide-slate-100">
+              {consultations.map((item) => {
+                const patient = item.patient || {};
+                const status = item.status || "Pending Review";
+                const dateStr =
+                  item.submittedAt || item.createdAt
+                    ? new Date(
+                        item.submittedAt || item.createdAt,
+                      ).toLocaleDateString()
+                    : "—";
 
-                  return (
-                    <tr
-                      key={item._id || item.id || item.referenceId}
-                      className="hover:bg-blue-50/30 transition-colors"
+                return (
+                  <div
+                    key={item._id || item.id || item.referenceId}
+                    className="p-4 space-y-3 hover:bg-slate-50/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                          {(patient.fullName || "A").charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
+                            {patient.fullName || "Anonymous Patient"}
+                          </h4>
+                          <span className="font-mono text-[11px] text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.2 rounded font-semibold inline-block mt-0.5">
+                            {item.referenceId}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${getStatusBadge(
+                          status,
+                        )}`}
+                      >
+                        {status}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-2.5 text-xs text-slate-600 space-y-1">
+                      {patient.email && (
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="text-slate-400">✉️</span>
+                          <span className="truncate">{patient.email}</span>
+                        </div>
+                      )}
+                      {patient.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400">📞</span>
+                          <span>{patient.phone}</span>
+                        </div>
+                      )}
+                      {patient.address && (
+                        <div className="flex items-start gap-1.5 text-slate-500">
+                          <span className="text-slate-400 shrink-0">📍</span>
+                          <span className="truncate">{patient.address}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px] text-slate-400">
+                        <span>Submitted</span>
+                        <span className="font-medium text-slate-600">{dateStr}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="w-full py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                      onClick={() => setSelectedConsultation(item)}
                     >
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                            {(patient.fullName || "A").charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900 leading-snug">
-                              {patient.fullName || "Anonymous Patient"}
+                      <svg
+                        className="w-3.5 h-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      <span>View & Edit Details</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View (Visible only on screens >= 640px) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="py-3 px-5">Patient Name</th>
+                    <th className="py-3 px-5">Reference ID</th>
+                    <th className="py-3 px-5">Contact Details</th>
+                    <th className="py-3 px-5">Submission Date</th>
+                    <th className="py-3 px-5">Status</th>
+                    <th className="py-3 px-5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {consultations.map((item) => {
+                    const patient = item.patient || {};
+                    const status = item.status || "Pending Review";
+                    const dateStr =
+                      item.submittedAt || item.createdAt
+                        ? new Date(
+                            item.submittedAt || item.createdAt,
+                          ).toLocaleDateString()
+                        : "—";
+
+                    return (
+                      <tr
+                        key={item._id || item.id || item.referenceId}
+                        className="hover:bg-blue-50/30 transition-colors"
+                      >
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                              {(patient.fullName || "A").charAt(0)}
                             </div>
-                            <div className="text-[11px] text-slate-400">
-                              {patient.occupation ||
-                                patient.sexAtBirth ||
-                                "Patient"}
+                            <div>
+                              <div className="font-bold text-slate-900 leading-snug">
+                                {patient.fullName || "Anonymous Patient"}
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                {patient.occupation ||
+                                  patient.sexAtBirth ||
+                                  "Patient"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-3.5 px-5">
-                        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-semibold">
-                          {item.referenceId}
-                        </span>
-                      </td>
+                        <td className="py-3.5 px-5">
+                          <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-semibold">
+                            {item.referenceId}
+                          </span>
+                        </td>
 
-                      <td className="py-3.5 px-5">
-                        <div className="text-xs text-slate-700 font-medium">
-                          {patient.email || "—"}
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {patient.phone || "—"}
-                        </div>
-                        {patient.address && (
-                          <div className="text-[11px] text-slate-500 truncate max-w-[200px] mt-0.5" title={patient.address}>
-                            📍 {patient.address}
+                        <td className="py-3.5 px-5">
+                          <div className="text-xs text-slate-700 font-medium">
+                            {patient.email || "—"}
                           </div>
-                        )}
-                      </td>
+                          <div className="text-[11px] text-slate-400">
+                            {patient.phone || "—"}
+                          </div>
+                          {patient.address && (
+                            <div className="text-[11px] text-slate-500 truncate max-w-[200px] mt-0.5" title={patient.address}>
+                              📍 {patient.address}
+                            </div>
+                          )}
+                        </td>
 
-                      <td className="py-3.5 px-5 text-xs text-slate-500 whitespace-nowrap">
-                        {dateStr}
-                      </td>
+                        <td className="py-3.5 px-5 text-xs text-slate-500 whitespace-nowrap">
+                          {dateStr}
+                        </td>
 
-                      <td className="py-3.5 px-5">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
-                            status,
-                          )}`}
-                        >
-                          {status}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition-all cursor-pointer mr-2"
-                          onClick={() => setSelectedConsultation(item)}
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
+                        <td className="py-3.5 px-5">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
+                              status,
+                            )}`}
                           >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                          <span>View & Edit</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {status}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition-all cursor-pointer mr-2"
+                            onClick={() => setSelectedConsultation(item)}
+                          >
+                            <svg
+                              className="w-3.5 h-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            <span>View & Edit</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
