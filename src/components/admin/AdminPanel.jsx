@@ -1,203 +1,354 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import AdminEditModal from './AdminEditModal'
 
+const CACHE_KEY = 'ayur_admin_consultations_cache_v2'
+
 export default function AdminPanel({ onBackToForm }) {
-  const [consultations, setConsultations] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [selectedConsultation, setSelectedConsultation] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [dataSource, setDataSource] = useState("Checking database...");
+  // ⚡ 1. Initialize immediately with cached consultations for 0ms startup
+  const [allConsultations, setAllConsultations] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (cached) return JSON.parse(cached)
+    } catch {
+      // ignore
+    }
+    return []
+  })
+
+  const [isLoading, setIsLoading] = useState(() => allConsultations.length === 0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isSearchingServer, setIsSearchingServer] = useState(false)
+  const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [selectedConsultation, setSelectedConsultation] = useState(null)
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [dataSource, setDataSource] = useState('Connecting to database...')
+
+  // Ref to track debounce timers
+  const debounceTimerRef = useRef(null)
 
   // ✅ Get backend URL
   const getBackendURL = () => {
-    // ✅ Production check - Multiple conditions
     const isProduction =
-      window.location.hostname === "vaidya-shivansh.vercel.app" ||
-      window.location.hostname.includes("vercel.app") ||
-      window.location.hostname.includes("vaidya-shivansh");
+      window.location.hostname === 'vaidya-shivansh.vercel.app' ||
+      window.location.hostname.includes('vercel.app') ||
+      window.location.hostname.includes('vaidya-shivansh')
 
     if (isProduction) {
-      return "https://ayurvedic-backend-hkci.onrender.com";
+      return 'https://ayurvedic-backend-hkci.onrender.com'
     }
 
-    return window.location.origin;
-  };
+    return window.location.origin
+  }
 
-  const BACKEND_URL = getBackendURL();
+  const BACKEND_URL = getBackendURL()
 
-  useEffect(() => {
-    let isMounted = true;
+  // ⚡ 2. Instant in-memory client-side filter (0 ms latency on typing / clicking tabs)
+  const filteredConsultations = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
 
-    async function loadData() {
+    return allConsultations.filter((item) => {
+      // Status filter
+      if (statusFilter !== 'All') {
+        const itemStatus = item.status || 'Pending Review'
+        if (itemStatus !== statusFilter) return false
+      }
+
+      // Search query filter
+      if (!q) return true
+
+      const patient = item.patient || {}
+      const name = (patient.fullName || '').toLowerCase()
+      const email = (patient.email || '').toLowerCase()
+      const phone = (patient.phone || '').toLowerCase()
+      const address = (patient.address || '').toLowerCase()
+      const ref = (item.referenceId || '').toLowerCase()
+
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        phone.includes(q) ||
+        address.includes(q) ||
+        ref.includes(q)
+      )
+    })
+  }, [allConsultations, statusFilter, searchQuery])
+
+  // ⚡ 3. High performance server fetch function
+  const fetchFromServer = useCallback(
+    async (search = '', status = 'All', showBackgroundSpinner = true) => {
+      if (showBackgroundSpinner) {
+        setIsSearchingServer(true)
+      }
+      setError(null)
+
       try {
-        // ✅ Use full backend URL
-        const url = new URL("/api/consultations", BACKEND_URL);
+        const url = new URL('/api/consultations', BACKEND_URL)
+        if (search) url.searchParams.set('search', search)
+        if (status !== 'All') url.searchParams.set('status', status)
 
-        console.log(url);
+        const res = await fetch(url.toString())
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`)
 
-        if (searchQuery) url.searchParams.set("search", searchQuery);
-        if (statusFilter !== "All")
-          url.searchParams.set("status", statusFilter);
+        const data = await res.json()
+        const records = data.records || []
 
-        console.log("🔗 Fetching from:", url.toString());
+        setAllConsultations((prev) => {
+          // If default unfiltered view, update entire cache
+          if (!search && status === 'All') {
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify(records))
+            } catch {
+              // ignore
+            }
+            return records
+          }
 
-        const res = await fetch(url.toString());
+          // Otherwise merge found records into our master list so local view remains comprehensive
+          const map = new Map(
+            prev.map((item) => [item._id || item.id || item.referenceId, item])
+          )
+          records.forEach((r) =>
+            map.set(r._id || r.id || r.referenceId, r)
+          )
+          const merged = Array.from(map.values())
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(merged))
+          } catch {
+            // ignore
+          }
+          return merged
+        })
 
-        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        setDataSource(
+          data.source === 'mongodb'
+            ? 'MongoDB Database (Optimized)'
+            : 'Local Archive Fallback'
+        )
+      } catch (err) {
+        console.warn('Backend fetch failed, using local cache:', err)
+        setError('Could not reach remote server. Showing cached patient records.')
+      } finally {
+        setIsLoading(false)
+        setIsRefreshing(false)
+        setIsSearchingServer(false)
+      }
+    },
+    [BACKEND_URL]
+  )
 
-        const data = await res.json();
-        console.log("✅ Data received:", data);
+  // ⚡ 4. Initial load on mount (background revalidation)
+  useEffect(() => {
+    let isSubscribed = true
 
-        if (isMounted) {
-          setConsultations(data.records || []);
+    const initData = async () => {
+      try {
+        const url = new URL('/api/consultations', BACKEND_URL)
+        const res = await fetch(url.toString())
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        const records = data.records || []
+
+        if (isSubscribed) {
+          setAllConsultations(records)
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(records))
+          } catch {
+            // ignore
+          }
           setDataSource(
-            data.source === "mongodb"
-              ? "MongoDB Database"
-              : "Local Archive Fallback",
-          );
-          setIsLoading(false);
+            data.source === 'mongodb'
+              ? 'MongoDB Database (Optimized)'
+              : 'Local Archive Fallback'
+          )
         }
       } catch (err) {
-        console.warn("Backend fetch failed:", err);
-        if (isMounted) {
-          setError("Could not reach backend. Showing local cache.");
-          try {
-            const local = JSON.parse(
-              localStorage.getItem("ayur_submitted_records") || "[]",
-            );
-            setConsultations(local);
-            setDataSource("Browser Local Cache");
-          } catch {
-            setConsultations([]);
-          }
-          setIsLoading(false);
+        console.warn('Initial load failed:', err)
+        if (isSubscribed) {
+          setError('Could not reach remote server. Showing cached patient records.')
+        }
+      } finally {
+        if (isSubscribed) {
+          setIsLoading(false)
         }
       }
     }
 
-    loadData();
+    initData()
 
     return () => {
-      isMounted = false;
-    };
-  }, [searchQuery, statusFilter, BACKEND_URL]);
+      isSubscribed = false
+    }
+  }, [BACKEND_URL])
 
+  // ⚡ 5. Debounced server search: only queries backend after 350ms pause in typing
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    // Only fire background server search if there's an active search query
+    if (searchQuery.trim().length > 1) {
+      debounceTimerRef.current = setTimeout(() => {
+        fetchFromServer(searchQuery, statusFilter, true)
+      }, 350)
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [searchQuery, statusFilter, fetchFromServer])
+
+  // Manual refresh handler
   const handleManualRefresh = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const url = new URL("/api/consultations", BACKEND_URL);
-      if (searchQuery) url.searchParams.set("search", searchQuery);
-      if (statusFilter !== "All") url.searchParams.set("status", statusFilter);
+    setIsRefreshing(true)
+    await fetchFromServer(searchQuery, statusFilter, false)
+  }
 
-      console.log("🔄 Refreshing from:", url.toString());
+  // ⚡ 6. Instant Consultation detail opener (opens modal immediately, loads responses on demand)
+  const handleOpenConsultation = async (item) => {
+    setSelectedConsultation(item)
 
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-
-      const data = await res.json();
-      setConsultations(data.records || []);
-      setDataSource(
-        data.source === "mongodb"
-          ? "MongoDB Database"
-          : "Local Archive Fallback",
-      );
-    } catch (err) {
-      console.warn("Refresh failed:", err);
-      setError("Could not refresh from backend server.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateRecord = async (id, updatedFields) => {
-    setIsSaving(true);
-    try {
-      // ✅ Use full backend URL
-      const url = new URL(`/api/consultation/${id}`, BACKEND_URL);
-
-      const res = await fetch(url.toString(), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedFields),
-      });
-
-      if (!res.ok) throw new Error("Update failed");
-
-      const data = await res.json();
-      setConsultations((prev) =>
-        prev.map((c) =>
-          c._id === id || c.id === id || c.referenceId === id ? data.record : c,
-        ),
-      );
-      setSelectedConsultation(null);
-    } catch (err) {
-      console.warn("Error saving to backend, updating locally:", err);
-      setConsultations((prev) =>
-        prev.map((c) => {
-          if (c._id === id || c.id === id || c.referenceId === id) {
-            return { ...c, ...updatedFields };
+    // If responses are not yet loaded (because list uses lightweight lean query), fetch full document in background
+    if (!item.responses || Object.keys(item.responses).length === 0) {
+      setIsLoadingDetails(true)
+      try {
+        const id = item._id || item.id || item.referenceId
+        const url = new URL(`/api/consultation/${id}`, BACKEND_URL)
+        const res = await fetch(url.toString())
+        if (res.ok) {
+          const data = await res.json()
+          if (data.record) {
+            setSelectedConsultation(data.record)
+            // Update cache with full document so future clicks are instant
+            setAllConsultations((prev) =>
+              prev.map((c) =>
+                c._id === id || c.id === id || c.referenceId === id
+                  ? data.record
+                  : c
+              )
+            )
           }
-          return c;
-        }),
-      );
-      setSelectedConsultation(null);
-    } finally {
-      setIsSaving(false);
+        }
+      } catch (err) {
+        console.warn('Could not fetch full consultation detail:', err)
+      } finally {
+        setIsLoadingDetails(false)
+      }
     }
-  };
+  }
 
+  // Save changes handler
+  const handleUpdateRecord = async (id, updatedFields) => {
+    setIsSaving(true)
+    try {
+      const url = new URL(`/api/consultation/${id}`, BACKEND_URL)
+      const res = await fetch(url.toString(), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields),
+      })
+
+      if (!res.ok) throw new Error('Update failed')
+
+      const data = await res.json()
+      const updated = data.record || { ...selectedConsultation, ...updatedFields }
+
+      setAllConsultations((prev) => {
+        const next = prev.map((c) =>
+          c._id === id || c.id === id || c.referenceId === id ? updated : c
+        )
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(next))
+        } catch {
+          // ignore
+        }
+        return next
+      })
+      setSelectedConsultation(null)
+    } catch (err) {
+      console.warn('Error saving to backend, updating locally:', err)
+      setAllConsultations((prev) => {
+        const next = prev.map((c) => {
+          if (c._id === id || c.id === id || c.referenceId === id) {
+            return { ...c, ...updatedFields }
+          }
+          return c
+        })
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(next))
+        } catch {
+          // ignore
+        }
+        return next
+      })
+      setSelectedConsultation(null)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Delete record handler
   const handleDeleteRecord = async (id) => {
     try {
-      // ✅ Use full backend URL
-      const url = new URL(`/api/consultation/${id}`, BACKEND_URL);
-      await fetch(url.toString(), { method: "DELETE" });
+      const url = new URL(`/api/consultation/${id}`, BACKEND_URL)
+      await fetch(url.toString(), { method: 'DELETE' })
 
-      setConsultations((prev) =>
-        prev.filter((c) => c._id !== id && c.id !== id && c.referenceId !== id),
-      );
-      setSelectedConsultation(null);
+      setAllConsultations((prev) => {
+        const next = prev.filter(
+          (c) => c._id !== id && c.id !== id && c.referenceId !== id
+        )
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(next))
+        } catch {
+          // ignore
+        }
+        return next
+      })
+      setSelectedConsultation(null)
     } catch (err) {
-      console.error("Delete failed:", err);
-      setConsultations((prev) =>
-        prev.filter((c) => c._id !== id && c.id !== id && c.referenceId !== id),
-      );
-      setSelectedConsultation(null);
+      console.error('Delete failed:', err)
+      setAllConsultations((prev) =>
+        prev.filter((c) => c._id !== id && c.id !== id && c.referenceId !== id)
+      )
+      setSelectedConsultation(null)
     }
-  };
+  }
 
-  const totalCount = consultations.length;
-  const pendingCount = consultations.filter(
-    (c) => (c.status || "Pending Review") === "Pending Review",
-  ).length;
-  const reviewCount = consultations.filter(
-    (c) => c.status === "Under Review",
-  ).length;
-  const completedCount = consultations.filter(
-    (c) => c.status === "Completed",
-  ).length;
+  // Metrics counts
+  const totalCount = allConsultations.length
+  const pendingCount = allConsultations.filter(
+    (c) => (c.status || 'Pending Review') === 'Pending Review'
+  ).length
+  const reviewCount = allConsultations.filter(
+    (c) => c.status === 'Under Review'
+  ).length
+  const completedCount = allConsultations.filter(
+    (c) => c.status === 'Completed'
+  ).length
 
-  const getStatusBadge = (status = "Pending Review") => {
+  const getStatusBadge = (status = 'Pending Review') => {
     switch (status) {
-      case "Completed":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Under Review":
-        return "bg-sky-50 text-sky-700 border-sky-200";
-      case "Consultation Scheduled":
-        return "bg-purple-50 text-purple-700 border-purple-200";
-      case "Pending Review":
+      case 'Completed':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      case 'Under Review':
+        return 'bg-sky-50 text-sky-700 border-sky-200'
+      case 'Consultation Scheduled':
+        return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'Pending Review':
       default:
-        return "bg-amber-50 text-amber-700 border-amber-200";
+        return 'bg-amber-50 text-amber-700 border-amber-200'
     }
-  };
+  }
 
   return (
     <div className="w-full max-w-6xl space-y-6">
       {/* Top Banner & Header */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-8 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wide mb-2">
             <span>Admin & Practitioner Portal</span>
@@ -205,19 +356,27 @@ export default function AdminPanel({ onBackToForm }) {
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Consultation Management
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Data Source: <strong className="text-blue-600">{dataSource}</strong>
-          </p>
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 mt-1">
+            <span>Data Source:</span>
+            <strong className="text-blue-600 font-semibold">{dataSource}</strong>
+            {isSearchingServer && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                Syncing database...
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
             onClick={handleManualRefresh}
+            title="Refresh patient records from database"
           >
             <svg
-              className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-3.5 h-3.5 text-slate-600 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -225,7 +384,7 @@ export default function AdminPanel({ onBackToForm }) {
             >
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
-            <span>Refresh</span>
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
 
           <button
@@ -285,13 +444,14 @@ export default function AdminPanel({ onBackToForm }) {
 
       {/* Filter and Search Bar */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <div className="relative w-full sm:w-80">
+        {/* Instant Search Bar */}
+        <div className="relative w-full sm:w-96">
           <input
             type="text"
-            placeholder="Search by name, email, phone, address, reference..."
+            placeholder="Search name, phone, email, address, ref..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
           <svg
             className="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
@@ -303,23 +463,38 @@ export default function AdminPanel({ onBackToForm }) {
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
+
+          {/* Quick Clear or Spinner inside input */}
+          {searchQuery ? (
+            <button
+              type="button"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer"
+              onClick={() => setSearchQuery('')}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          ) : isSearchingServer ? (
+            <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin absolute right-3 top-2.5" />
+          ) : null}
         </div>
 
+        {/* Status Pills Filter */}
         <div className="flex gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {[
-            "All",
-            "Pending Review",
-            "Under Review",
-            "Consultation Scheduled",
-            "Completed",
+            'All',
+            'Pending Review',
+            'Under Review',
+            'Consultation Scheduled',
+            'Completed',
           ].map((st) => (
             <button
               key={st}
               type="button"
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 statusFilter === st
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "text-slate-600 hover:bg-slate-100"
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
               onClick={() => setStatusFilter(st)}
             >
@@ -348,12 +523,12 @@ export default function AdminPanel({ onBackToForm }) {
 
       {/* Submissions Table / Cards List */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-        {isLoading ? (
+        {isLoading && allConsultations.length === 0 ? (
           <div className="p-12 text-center text-slate-400 text-sm flex flex-col items-center gap-3">
             <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <span>Loading patient consultations...</span>
+            <span>Connecting to database & loading consultations...</span>
           </div>
-        ) : consultations.length === 0 ? (
+        ) : filteredConsultations.length === 0 ? (
           <div className="p-12 text-center text-slate-500 space-y-2">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
               <svg
@@ -368,27 +543,55 @@ export default function AdminPanel({ onBackToForm }) {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <div className="font-bold text-slate-800">
-              No Consultation Records Found
+            <div className="font-bold text-slate-800 text-base">
+              {searchQuery || statusFilter !== 'All'
+                ? 'No matching patient records'
+                : 'No Consultation Records Found'}
             </div>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Submissions from the patient intake form will appear here in real
-              time.
+              {searchQuery || statusFilter !== 'All'
+                ? `No records found matching "${searchQuery || statusFilter}". Try adjusting your filters.`
+                : 'Submissions from the patient intake form will appear here in real time.'}
             </p>
+            {(searchQuery || statusFilter !== 'All') && (
+              <button
+                type="button"
+                className="mt-2 text-xs text-blue-600 font-bold hover:underline cursor-pointer"
+                onClick={() => {
+                  setSearchQuery('')
+                  setStatusFilter('All')
+                }}
+              >
+                Reset filters
+              </button>
+            )}
           </div>
         ) : (
           <div>
+            {/* Summary count bar */}
+            <div className="px-5 py-2.5 bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+              <span>
+                Showing {filteredConsultations.length} of {allConsultations.length} record{allConsultations.length === 1 ? '' : 's'}
+              </span>
+              {isSearchingServer && (
+                <span className="text-blue-600 flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                  Checking server updates...
+                </span>
+              )}
+            </div>
+
             {/* Mobile Cards View (Visible only on small screens < 640px) */}
             <div className="sm:hidden divide-y divide-slate-100">
-              {consultations.map((item) => {
-                const patient = item.patient || {};
-                const status = item.status || "Pending Review";
+              {filteredConsultations.map((item) => {
+                const patient = item.patient || {}
+                const status = item.status || 'Pending Review'
                 const dateStr =
                   item.submittedAt || item.createdAt
                     ? new Date(
-                        item.submittedAt || item.createdAt,
+                        item.submittedAt || item.createdAt
                       ).toLocaleDateString()
-                    : "—";
+                    : '—'
 
                 return (
                   <div
@@ -398,11 +601,11 @@ export default function AdminPanel({ onBackToForm }) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                          {(patient.fullName || "A").charAt(0)}
+                          {(patient.fullName || 'A').charAt(0)}
                         </div>
                         <div className="min-w-0">
                           <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
-                            {patient.fullName || "Anonymous Patient"}
+                            {patient.fullName || 'Anonymous Patient'}
                           </h4>
                           <span className="font-mono text-[11px] text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.2 rounded font-semibold inline-block mt-0.5">
                             {item.referenceId}
@@ -412,7 +615,7 @@ export default function AdminPanel({ onBackToForm }) {
 
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${getStatusBadge(
-                          status,
+                          status
                         )}`}
                       >
                         {status}
@@ -447,7 +650,7 @@ export default function AdminPanel({ onBackToForm }) {
                     <button
                       type="button"
                       className="w-full py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-                      onClick={() => setSelectedConsultation(item)}
+                      onClick={() => handleOpenConsultation(item)}
                     >
                       <svg
                         className="w-3.5 h-3.5"
@@ -462,7 +665,7 @@ export default function AdminPanel({ onBackToForm }) {
                       <span>View & Edit Details</span>
                     </button>
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -480,15 +683,15 @@ export default function AdminPanel({ onBackToForm }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {consultations.map((item) => {
-                    const patient = item.patient || {};
-                    const status = item.status || "Pending Review";
+                  {filteredConsultations.map((item) => {
+                    const patient = item.patient || {}
+                    const status = item.status || 'Pending Review'
                     const dateStr =
                       item.submittedAt || item.createdAt
                         ? new Date(
-                            item.submittedAt || item.createdAt,
+                            item.submittedAt || item.createdAt
                           ).toLocaleDateString()
-                        : "—";
+                        : '—'
 
                     return (
                       <tr
@@ -498,16 +701,16 @@ export default function AdminPanel({ onBackToForm }) {
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                              {(patient.fullName || "A").charAt(0)}
+                              {(patient.fullName || 'A').charAt(0)}
                             </div>
                             <div>
                               <div className="font-bold text-slate-900 leading-snug">
-                                {patient.fullName || "Anonymous Patient"}
+                                {patient.fullName || 'Anonymous Patient'}
                               </div>
                               <div className="text-[11px] text-slate-400">
                                 {patient.occupation ||
                                   patient.sexAtBirth ||
-                                  "Patient"}
+                                  'Patient'}
                               </div>
                             </div>
                           </div>
@@ -521,13 +724,16 @@ export default function AdminPanel({ onBackToForm }) {
 
                         <td className="py-3.5 px-5">
                           <div className="text-xs text-slate-700 font-medium">
-                            {patient.email || "—"}
+                            {patient.email || '—'}
                           </div>
                           <div className="text-[11px] text-slate-400">
-                            {patient.phone || "—"}
+                            {patient.phone || '—'}
                           </div>
                           {patient.address && (
-                            <div className="text-[11px] text-slate-500 truncate max-w-[200px] mt-0.5" title={patient.address}>
+                            <div
+                              className="text-[11px] text-slate-500 truncate max-w-[200px] mt-0.5"
+                              title={patient.address}
+                            >
                               📍 {patient.address}
                             </div>
                           )}
@@ -540,7 +746,7 @@ export default function AdminPanel({ onBackToForm }) {
                         <td className="py-3.5 px-5">
                           <span
                             className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
-                              status,
+                              status
                             )}`}
                           >
                             {status}
@@ -550,8 +756,8 @@ export default function AdminPanel({ onBackToForm }) {
                         <td className="py-3.5 px-5 text-right whitespace-nowrap">
                           <button
                             type="button"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition-all cursor-pointer mr-2"
-                            onClick={() => setSelectedConsultation(item)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition-all cursor-pointer mr-2 shadow-2xs"
+                            onClick={() => handleOpenConsultation(item)}
                           >
                             <svg
                               className="w-3.5 h-3.5"
@@ -567,7 +773,7 @@ export default function AdminPanel({ onBackToForm }) {
                           </button>
                         </td>
                       </tr>
-                    );
+                    )
                   })}
                 </tbody>
               </table>
@@ -579,14 +785,18 @@ export default function AdminPanel({ onBackToForm }) {
       {/* Admin Edit Modal */}
       {selectedConsultation && (
         <AdminEditModal
+          key={
+            (selectedConsultation._id || selectedConsultation.id || selectedConsultation.referenceId) +
+            (selectedConsultation.responses && Object.keys(selectedConsultation.responses).length > 0 ? '-full' : '')
+          }
           consultation={selectedConsultation}
           onClose={() => setSelectedConsultation(null)}
           onSave={handleUpdateRecord}
           onDelete={handleDeleteRecord}
           isSaving={isSaving}
+          isLoadingDetails={isLoadingDetails}
         />
       )}
     </div>
-  );
+  )
 }
-

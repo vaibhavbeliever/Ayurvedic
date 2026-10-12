@@ -6,6 +6,7 @@ export default function AdminEditModal({
   onSave,
   onDelete,
   isSaving,
+  isLoadingDetails = false,
 }) {
   const [activeTab, setActiveTab] = useState('patient')
   const [patientData, setPatientData] = useState({
@@ -272,9 +273,17 @@ export default function AdminEditModal({
 
           {activeTab === 'responses' && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500">
-                All patient answers submitted during intake. You can edit any field if needed.
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-slate-500">
+                  All patient answers submitted during intake. You can edit any field if needed.
+                </p>
+                {isLoadingDetails && (
+                  <div className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200 shrink-0">
+                    <div className="w-2.5 h-2.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Loading full responses...</span>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-3">
                 {Object.entries(responses).map(([key, val]) => (
